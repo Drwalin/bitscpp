@@ -1,13 +1,13 @@
 /*
- *  This file is part of ICon6.
+ *  This file is part of bitscpp.
  *  Copyright (C) 2023 Marek Zalewski aka Drwalin
  *
- *  ICon6 is free software: you can redistribute it and/or modify
+ *  bitscpp is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  ICon6 is distributed in the hope that it will be useful,
+ *  bitscpp is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
@@ -16,18 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BIT_SERIALIZATION_CPP_WRITER_HPP
-#define BIT_SERIALIZATION_CPP_WRITER_HPP
+#ifndef BITSCPP_BYTE_WRITER_HPP
+#define BITSCPP_BYTE_WRITER_HPP
 
 #include <cinttypes>
 
 #include <string>
 #include <vector>
-#include <set>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <functional>
 
 namespace bitscpp {
 	
@@ -39,19 +34,7 @@ namespace bitscpp {
 		return writer;
 	}
 	
-// 	template<typename T, typename... Args>
-// 	inline ByteWriter& op(ByteWriter& writer, const T data, Args... args) {
-// 		(*(T*)&data).__ByteWriter_op(writer, args...);
-// 		return writer;
-// 	}
-	
 	namespace impl {
-// 		template<typename T, typename... Args>
-// 		static inline ByteWriter& __op(ByteWriter& writer, const T data, Args... args) {
-// 			op(writer, data, args...);
-// 			return writer;
-// 		}
-		
 		template<typename T, typename... Args>
 		static inline ByteWriter& __op_ptr(ByteWriter& writer, T*const data, Args... args) {
 			op(writer, *data, args...);
@@ -146,69 +129,9 @@ namespace bitscpp {
 			return op<T, Args...>(arr.data(), arr.size(), args...);
 		}
 		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(const std::set<T>& set, Args... args) {
-			op((uint32_t)set.size());
-			for(auto& v : set)
-				op(v, args...);
-			return *this;
-		}
-		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(const std::unordered_set<T>& set, Args... args) {
-			op((uint32_t)set.size());
-			for(auto& v : set)
-				op(v, args...);
-			return *this;
-		}
-		
 	private:
 		
 		std::vector<uint8_t>& buffer;
-// 		
-// 	private:
-// 		
-// 		template<> ByteWriter& op<uint8_t >(const uint8_t& ) = delete;
-// 		template<> ByteWriter& op<uint16_t>(const uint16_t&) = delete;
-// 		template<> ByteWriter& op<uint32_t>(const uint32_t&) = delete;
-// 		template<> ByteWriter& op<uint64_t>(const uint64_t&) = delete;
-// 		template<> ByteWriter& op<int8_t  >(const int8_t&  ) = delete;
-// 		template<> ByteWriter& op<int16_t >(const int16_t& ) = delete;
-// 		template<> ByteWriter& op<int32_t >(const int32_t& ) = delete;
-// 		template<> ByteWriter& op<int64_t >(const int64_t& ) = delete;
-// 		
-// 		template<> ByteWriter& op<uint8_t , uint32_t>(const uint8_t& , uint32_t) = delete;
-// 		template<> ByteWriter& op<uint16_t, uint32_t>(const uint16_t&, uint32_t) = delete;
-// 		template<> ByteWriter& op<uint32_t, uint32_t>(const uint32_t&, uint32_t) = delete;
-// 		template<> ByteWriter& op<uint64_t, uint32_t>(const uint64_t&, uint32_t) = delete;
-// 		template<> ByteWriter& op<int8_t  , uint32_t>(const int8_t&  , uint32_t) = delete;
-// 		template<> ByteWriter& op<int16_t , uint32_t>(const int16_t& , uint32_t) = delete;
-// 		template<> ByteWriter& op<int32_t , uint32_t>(const int32_t& , uint32_t) = delete;
-// 		template<> ByteWriter& op<int64_t , uint32_t>(const int64_t& , uint32_t) = delete;
-// 		
-// 		template<> ByteWriter& op<int >(const int& ) = delete;
-// 		template<> ByteWriter& op<char >(const char& ) = delete;
-// 		template<> ByteWriter& op<short >(const short& ) = delete;
-// 		template<> ByteWriter& op<long >(const long& ) = delete;
-// 		template<> ByteWriter& op<long long >(const long long& ) = delete;
-// 		template<> ByteWriter& op<size_t >(const size_t& ) = delete;
-// 		
-// 		template<> ByteWriter& op<int, uint32_t>(const int&, uint32_t) = delete;
-// 		template<> ByteWriter& op<char, uint32_t>(const char&, uint32_t) = delete;
-// 		template<> ByteWriter& op<short, uint32_t>(const short&, uint32_t) = delete;
-// 		template<> ByteWriter& op<long, uint32_t>(const long&, uint32_t) = delete;
-// 		template<> ByteWriter& op<long long, uint32_t>(const long long&, uint32_t) = delete;
-// 		template<> ByteWriter& op<size_t, uint32_t>(const size_t&, uint32_t) = delete;
-// 		
-// 		template<> ByteWriter& op<float>(const float& value) = delete;
-// 		template<> ByteWriter& op<double>(const double& value) = delete;
-// 		template<> ByteWriter& op<float,float,float,uint32_t>(const float& value, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteWriter& op<double,double,double,uint32_t>(const double& value, double min, double max, uint32_t bytes) = delete;
-// 		template<> ByteWriter& op<float,float,float,float,uint32_t>(const float& value, float origin, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteWriter& op<double,double,double,double,uint32_t>(const double& value, double origin, double min, double max, uint32_t bytes) = delete;
-// 		
-// 		template<> ByteWriter& op<std::string>(const std::string& str) = delete;
-// 		template<> ByteWriter& op<std::vector<uint8_t>>(const std::vector<uint8_t>& binary) = delete;
 	};
 	
 	
@@ -312,7 +235,6 @@ namespace bitscpp {
 			double max, uint32_t bytes) {
 		return op(value - origin, min, max, bytes);
 	}
-	
 } // namespace bitscpp
 
 #endif

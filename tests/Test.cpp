@@ -1,6 +1,6 @@
 
-#include <bitscpp/Writer.hpp>
-#include <bitscpp/Reader.hpp>
+#include <bitscpp/ByteWriterExtensions.hpp>
+#include <bitscpp/ByteReaderExtensions.hpp>
 
 #include <iostream>
 

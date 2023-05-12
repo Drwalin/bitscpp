@@ -1,13 +1,13 @@
 /*
- *  This file is part of ICon6.
+ *  This file is part of bitscpp.
  *  Copyright (C) 2023 Marek Zalewski aka Drwalin
  *
- *  ICon6 is free software: you can redistribute it and/or modify
+ *  bitscpp is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  ICon6 is distributed in the hope that it will be useful,
+ *  bitscpp is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
@@ -16,19 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BIT_SERIALIZATION_CPP_READER_HPP
-#define BIT_SERIALIZATION_CPP_READER_HPP
+#ifndef BITSCPP_BYTE_READER_HPP
+#define BITSCPP_BYTE_READER_HPP
 
 #include <cinttypes>
 #include <cstring>
 
 #include <string>
 #include <vector>
-#include <set>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <functional>
 
 namespace bitscpp {
 	
@@ -139,29 +134,7 @@ namespace bitscpp {
 			return op<T, Args...>(arr.data(), bytes, args...);
 		}
 		
-		template<typename T, typename... Args>
-		inline ByteReader& op(std::set<T>& set, Args... args) {
-			uint32_t bytes;
-			op(bytes);
-			for(uint32_t i=0; i<bytes; ++i) {
-				T v;
-				op(v, args...);
-				set.emplace_hint(set.end(), std::move(v));
-			}
-			return *this;
-		}
 		
-		template<typename T, typename... Args>
-		inline ByteReader& op(std::unordered_set<T>& set, Args... args) {
-			uint32_t bytes;
-			op(bytes);
-			for(uint32_t i=0; i<bytes; ++i) {
-				T v;
-				op(v, args...);
-				set.insert(std::move(v));
-			}
-			return *this;
-		}
 		
 		inline bool is_valid() const {
 			return offset <= size;
@@ -176,50 +149,6 @@ namespace bitscpp {
 		const uint8_t* buffer;
 		const uint32_t size;
 		uint32_t offset;
-// 		
-// 	private:
-// 		
-// 		template<> ByteReader& op<uint8_t >(uint8_t& ) = delete;
-// 		template<> ByteReader& op<uint16_t>(uint16_t&) = delete;
-// 		template<> ByteReader& op<uint32_t>(uint32_t&) = delete;
-// 		template<> ByteReader& op<uint64_t>(uint64_t&) = delete;
-// 		template<> ByteReader& op<int8_t  >(int8_t&  ) = delete;
-// 		template<> ByteReader& op<int16_t >(int16_t& ) = delete;
-// 		template<> ByteReader& op<int32_t >(int32_t& ) = delete;
-// 		template<> ByteReader& op<int64_t >(int64_t& ) = delete;
-// 		
-// 		template<> ByteReader& op<uint8_t , uint32_t>(uint8_t& , uint32_t) = delete;
-// 		template<> ByteReader& op<uint16_t, uint32_t>(uint16_t&, uint32_t) = delete;
-// 		template<> ByteReader& op<uint32_t, uint32_t>(uint32_t&, uint32_t) = delete;
-// 		template<> ByteReader& op<uint64_t, uint32_t>(uint64_t&, uint32_t) = delete;
-// 		template<> ByteReader& op<int8_t  , uint32_t>(int8_t&  , uint32_t) = delete;
-// 		template<> ByteReader& op<int16_t , uint32_t>(int16_t& , uint32_t) = delete;
-// 		template<> ByteReader& op<int32_t , uint32_t>(int32_t& , uint32_t) = delete;
-// 		template<> ByteReader& op<int64_t , uint32_t>(int64_t& , uint32_t) = delete;
-// 		
-// 		template<> ByteReader& op<int >(int& ) = delete;
-// 		template<> ByteReader& op<char >(char& ) = delete;
-// 		template<> ByteReader& op<short >(short& ) = delete;
-// 		template<> ByteReader& op<long >(long& ) = delete;
-// 		template<> ByteReader& op<long long >(long long& ) = delete;
-// 		template<> ByteReader& op<size_t >(size_t& ) = delete;
-// 		
-// 		template<> ByteReader& op<int, uint32_t>(int&, uint32_t) = delete;
-// 		template<> ByteReader& op<char, uint32_t>(char&, uint32_t) = delete;
-// 		template<> ByteReader& op<short, uint32_t>(short&, uint32_t) = delete;
-// 		template<> ByteReader& op<long, uint32_t>(long&, uint32_t) = delete;
-// 		template<> ByteReader& op<long long, uint32_t>(long long&, uint32_t) = delete;
-// 		template<> ByteReader& op<size_t, uint32_t>(size_t&, uint32_t) = delete;
-// 		
-// 		template<> ByteReader& op<float>(float& value) = delete;
-// 		template<> ByteReader& op<double>(double& value) = delete;
-// 		template<> ByteReader& op<float,float,float,uint32_t>(float& value, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteReader& op<double,double,double,uint32_t>(double& value, double min, double max, uint32_t bytes) = delete;
-// 		template<> ByteReader& op<float,float,float,float,uint32_t>(float& value, float origin, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteReader& op<double,double,double,double,uint32_t>(double& value, double origin, double min, double max, uint32_t bytes) = delete;
-// 		
-// 		template<> ByteReader& op<std::string>(std::string& str) = delete;
-// 		template<> ByteReader& op<std::vector<uint8_t>>(std::vector<uint8_t>& binary) = delete;
 	};
 	
 	
@@ -333,7 +262,6 @@ namespace bitscpp {
 		value += origin;
 		return *this;
 	}
-	
 } // namespace bitscpp
 
 #endif
