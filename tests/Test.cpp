@@ -6,7 +6,27 @@
 
 #include <cstdio>
 
-// #pragma pack(push, 1)
+template<typename T>
+std::ostream& operator<<(std::ostream& s, std::set<T> v) {
+	s << "{";
+	int i=0;
+	for(T t : v)
+		s << (i++?", ":"") << t;
+	s << "}";
+	return s;
+}
+
+template<typename T>
+std::ostream& operator<<(std::ostream& s, std::vector<T> v) {
+	s << "{";
+	int i=0;
+	for(T t : v)
+		s << (i++?", ":"") << t;
+	s << "}";
+	return s;
+}
+
+#pragma pack(push, 1)
 struct Struct {
 	Struct() {
 		clear();
@@ -18,7 +38,7 @@ struct Struct {
 	}
 	
 	bool operator==(const Struct& other) {
-		return !memcmp(this, &other, sizeof(*this));
+		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str;
 	}
 	
 	uint32_t bytes16;
@@ -47,6 +67,9 @@ struct Struct {
 	
 	double f2;
 	float f1;
+	
+	std::string str;
+	std::vector<int> is;
 	
 	void cmp(Struct& s) {
 		std::cout << "\n\n";
@@ -77,6 +100,10 @@ struct Struct {
 		std::cout << " floats\n";
 		std::cout << f2 		<< "    " << s.f2 << "\n";
 		std::cout << f1 		<< "    " << s.f1 << "\n";
+		std::cout << " string\n";
+		std::cout << "'"<<str << "'    '" << s.str << "'\n";
+		std::cout << " vector<int>\n";
+		std::cout << "'"<<is << "'    '" << s.is << "'\n";
 	}
 	
 	template<typename S>
@@ -94,26 +121,35 @@ struct Struct {
 		s.op(a64, bytes64);
 		s.op(ua64, bytes64);
 		
-		s.op(f2);
+		s.op(str);
 		
 		s.op(b8);
 		s.op(ub8);
 		s.op(b16);
 		s.op(ub16);
+		
+		s.op(is, 3);
+		
 		s.op(b32);
 		s.op(ub32);
 		s.op(b64);
 		s.op(ub64);
 		
+		s.op(f2);
 		s.op(f1);
+		
 		return s;
 	}
 	
 	void clear() {
+		str.~basic_string();
+		is.~vector();
 		memset(this, 0, sizeof(*this));
+		new (&str) std::string;
+		new (&is) std::vector<int>;
 	}
 };
-// #pragma pack(pop)
+#pragma pack(pop)
 
 static uint64_t I = 1;
 void Random(void* ptr, uint32_t bytes) {
@@ -137,6 +173,16 @@ void Random(Struct& s) {
 	static int _b64 = -1;
 	
 	s.clear();
+	
+	s.str = "ala ma hfdjsak lfdhsjk fljhasd fljadskl fdha klfdasjf l";
+// 	s.str += std::to_string(++I);
+	static int issize = -1;
+	s.is.resize(++issize);
+	for(int&v : s.is) {
+		Random(v);
+		v %= 1<<24;
+	}
+	
 	
 	Random(s.a8);
 	Random(s.ua8);
@@ -190,8 +236,40 @@ void Random(Struct& s) {
 	s.ua64 &= (1llu<<(s.bytes64<<3)) - 1;
 }
 
+#define COMP(T, orig, X) { \
+		T v = orig; \
+		std::cout << v << "  ==  "; \
+		std::vector<uint8_t> ____buffer; \
+		{ bitscpp::ByteWriter s(____buffer); \
+		X;} \
+		v = 0; \
+		{ bitscpp::ByteReader s(____buffer.data(), ____buffer.size()); \
+		X;} \
+		std::cout << v << "\n"; \
+}
+
+
+#define COMPARE(T, orig, value, X) { \
+		T v = orig; \
+		std::vector<uint8_t> ____buffer; \
+		{ bitscpp::ByteWriter s(____buffer); \
+		X;} \
+		v = T(); \
+		{ bitscpp::ByteReader s(____buffer.data(), ____buffer.size()); \
+		X;} \
+		if(v == value) std::cout << " TRUE      "; \
+		else std::cout << " FALSE      "; \
+		std::cout << value << "  ==  " << v << "\n"; \
+}
+
+template<typename Tdst, typename Tsrc>
+Tdst RC(Tsrc v) {
+	return *(Tdst*)&v;
+}
+
 int main() {
 	
+	{
 	std::vector<uint8_t> buffer;
 	
 	for(int i=0; i<16; ++i) {
@@ -213,6 +291,55 @@ int main() {
 		printf(" equality: %i -> %s\n", i, s1==s2 ? "true" : "false");
 // 		s1.cmp(s2);
 	}
+	}
+	
+	std::cout << "\n\n\n\n";
+	
+
+	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0.f,200.f,1u));
+	COMPARE(float, 500, RC<float>((uint32_t)(0x43FA000A)), s.op(v,480.f,-20.f,60.f,2u));
+	COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
+	
+	
+	COMPARE(std::string, "123456", "123456", s.op(v));
+	{
+		std::vector<std::string> vs = {"asdf","323","mleko"};
+		COMPARE(decltype(vs), vs, vs, s.op(v));
+	}
+	
+	{
+		std::vector<uint8_t> vs = {41,31,211,21,33,123,53,223,135,235,25,243,77};
+		COMPARE(decltype(vs), vs, vs, s.op(v));
+	}
+	
+	{
+		std::vector<int> vs = {4,3,2,1,24,532,53,2423,435,2345,4325,243,54235};
+		COMPARE(decltype(vs), vs, vs, s.op(v));
+	}
+	
+	{
+		std::vector<int> vs = {13,123,12345};
+		COMPARE(decltype(vs), vs, vs, s.op(v));
+	}
+	
+	{
+		std::vector<std::set<int>> vs = {{13,123},{12345}};
+		COMPARE(decltype(vs), vs, vs, s.op(v));
+	}
+	
+	{
+		std::vector<int> vs = {13,123,12345};
+		std::vector<int> vs2 = {13,123,57};
+		COMPARE(decltype(vs), vs, vs2, s.op(v, 1));
+	}
+	
+	{
+		std::vector<std::set<int>> vs = {{13,123},{12345}};
+		std::vector<std::set<int>> vs2 = {{13,123},{57}};
+		COMPARE(decltype(vs), vs, vs2, s.op(v, 1));
+	}
+	
+	
 	return 0;
 }
 
