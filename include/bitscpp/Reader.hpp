@@ -259,19 +259,19 @@ namespace bitscpp {
 	inline ByteReader& ByteReader::op(uint16_t& v, uint32_t bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
-			v |= (buffer[offset++])<<(i<<3);
+			v |= ((uint16_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint32_t& v, uint32_t bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
-			v |= (buffer[offset++])<<(i<<3);
+			v |= ((uint32_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint64_t& v, uint32_t bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
-			v |= (buffer[offset++])<<(i<<3);
+			v |= ((uint64_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
 	
@@ -295,11 +295,11 @@ namespace bitscpp {
 	
 	
 	inline ByteReader& ByteReader::op(float& value) {
-		return op(*(uint32_t*)&value, 4);
+		return op((uint32_t&)value, 4);
 	}
 	
 	inline ByteReader& ByteReader::op(double& value) {
-		return op(*(uint64_t*)&value, 8);
+		return op((uint64_t&)value, 8);
 	}
 	
 	inline ByteReader& ByteReader::op(float& value, float min, float max,
