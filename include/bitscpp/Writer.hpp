@@ -128,8 +128,8 @@ namespace bitscpp {
 		inline ByteWriter& op(float value, float min, float max, uint32_t bytes);
 		inline ByteWriter& op(double value, double min, double max, uint32_t bytes);
 		
-		inline ByteWriter& op(float value, float offset, float min, float max, uint32_t bytes);
-		inline ByteWriter& op(double value, double offset, double min, double max, uint32_t bytes);
+		inline ByteWriter& op(float value, float origin, float min, float max, uint32_t bytes);
+		inline ByteWriter& op(double value, double origin, double min, double max, uint32_t bytes);
 		
 	public:
 		
@@ -204,8 +204,8 @@ namespace bitscpp {
 // 		template<> ByteWriter& op<double>(const double& value) = delete;
 // 		template<> ByteWriter& op<float,float,float,uint32_t>(const float& value, float min, float max, uint32_t bytes) = delete;
 // 		template<> ByteWriter& op<double,double,double,uint32_t>(const double& value, double min, double max, uint32_t bytes) = delete;
-// 		template<> ByteWriter& op<float,float,float,float,uint32_t>(const float& value, float offset, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteWriter& op<double,double,double,double,uint32_t>(const double& value, double offset, double min, double max, uint32_t bytes) = delete;
+// 		template<> ByteWriter& op<float,float,float,float,uint32_t>(const float& value, float origin, float min, float max, uint32_t bytes) = delete;
+// 		template<> ByteWriter& op<double,double,double,double,uint32_t>(const double& value, double origin, double min, double max, uint32_t bytes) = delete;
 // 		
 // 		template<> ByteWriter& op<std::string>(const std::string& str) = delete;
 // 		template<> ByteWriter& op<std::vector<uint8_t>>(const std::vector<uint8_t>& binary) = delete;
@@ -303,14 +303,14 @@ namespace bitscpp {
 		return op(v, bytes);
 	}
 	
-	inline ByteWriter& ByteWriter::op(float value, float offset, float min,
+	inline ByteWriter& ByteWriter::op(float value, float origin, float min,
 			float max, uint32_t bytes) {
-		return op(value + offset, min, max, bytes);
+		return op(value - origin, min, max, bytes);
 	}
 	
-	inline ByteWriter& ByteWriter::op(double value, double offset, double min,
+	inline ByteWriter& ByteWriter::op(double value, double origin, double min,
 			double max, uint32_t bytes) {
-		return op(value + offset, min, max, bytes);
+		return op(value - origin, min, max, bytes);
 	}
 	
 } // namespace bitscpp

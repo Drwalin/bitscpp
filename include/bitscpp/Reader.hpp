@@ -119,8 +119,8 @@ namespace bitscpp {
 		inline ByteReader& op(float& v, float min, float max, uint32_t bytes);
 		inline ByteReader& op(double& v, double min, double max, uint32_t bytes);
 		
-		inline ByteReader& op(float& v, float offset, float min, float max, uint32_t bytes);
-		inline ByteReader& op(double& v, double offset, double min, double max, uint32_t bytes);
+		inline ByteReader& op(float& v, float origin, float min, float max, uint32_t bytes);
+		inline ByteReader& op(double& v, double origin, double min, double max, uint32_t bytes);
 		
 	public:
 		
@@ -215,8 +215,8 @@ namespace bitscpp {
 // 		template<> ByteReader& op<double>(double& value) = delete;
 // 		template<> ByteReader& op<float,float,float,uint32_t>(float& value, float min, float max, uint32_t bytes) = delete;
 // 		template<> ByteReader& op<double,double,double,uint32_t>(double& value, double min, double max, uint32_t bytes) = delete;
-// 		template<> ByteReader& op<float,float,float,float,uint32_t>(float& value, float offset, float min, float max, uint32_t bytes) = delete;
-// 		template<> ByteReader& op<double,double,double,double,uint32_t>(double& value, double offset, double min, double max, uint32_t bytes) = delete;
+// 		template<> ByteReader& op<float,float,float,float,uint32_t>(float& value, float origin, float min, float max, uint32_t bytes) = delete;
+// 		template<> ByteReader& op<double,double,double,double,uint32_t>(double& value, double origin, double min, double max, uint32_t bytes) = delete;
 // 		
 // 		template<> ByteReader& op<std::string>(std::string& str) = delete;
 // 		template<> ByteReader& op<std::vector<uint8_t>>(std::vector<uint8_t>& binary) = delete;
@@ -306,29 +306,31 @@ namespace bitscpp {
 			uint32_t bytes) {
 		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
-		return op(v, bytes);
+		op(v, bytes);
 		value = v * (max-min)/fmask;
+		return *this;
 	}
 	
 	inline ByteReader& ByteReader::op(double& value, double min, double max,
 			uint32_t bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
-		return op(v, bytes);
+		op(v, bytes);
 		value = v * (max-min)/fmask;
-	}
-	
-	inline ByteReader& ByteReader::op(float& value, float offset, float min,
-			float max, uint32_t bytes) {
-		op(value, min, max, bytes);
-		value -= offset;
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(double& value, double offset, double min,
+	inline ByteReader& ByteReader::op(float& value, float origin, float min,
+			float max, uint32_t bytes) {
+		op(value, min, max, bytes);
+		value += origin;
+		return *this;
+	}
+	
+	inline ByteReader& ByteReader::op(double& value, double origin, double min,
 			double max, uint32_t bytes) {
 		op(value, min, max, bytes);
-		value -= offset;
+		value += origin;
 		return *this;
 	}
 	
