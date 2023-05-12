@@ -94,6 +94,8 @@ struct Struct {
 		s.op(a64, bytes64);
 		s.op(ua64, bytes64);
 		
+		s.op(f2);
+		
 		s.op(b8);
 		s.op(ub8);
 		s.op(b16);
@@ -104,7 +106,6 @@ struct Struct {
 		s.op(ub64);
 		
 		s.op(f1);
-		s.op(f2);
 		return s;
 	}
 	
@@ -122,6 +123,14 @@ void Random(void* ptr, uint32_t bytes) {
 	}
 }
 
+template<typename T>
+void Random(T& v) {
+	v = 0;
+	for(int i=0; i<sizeof(T); ++i) {
+		v |= ((T)(++I)&255)<<(i<<3);
+	}
+}
+
 void Random(Struct& s) {
 	static int _b16 = -1;
 	static int _b32 = -1;
@@ -129,24 +138,45 @@ void Random(Struct& s) {
 	
 	s.clear();
 	
-	s.a8 = ++I;
-	s.ua8 = ++I;
-	s.b8 = ++I;
-	s.ub8 = ++I;
-	s.a16 = ++I;
-	s.ua16 = ++I;
-	s.b16 = ++I;
-	s.ub16 = ++I;
-	s.a32 = ++I;
-	s.ua32 = ++I;
-	s.b32 = ++I;
-	s.ub32 = ++I;
-	s.a64 = ++I;
-	s.ua64 = ++I;
-	s.b64 = ++I;
-	s.ub64 = ++I;
-	s.f2 = ++I;
-	s.f1 = ++I;
+	Random(s.a8);
+	Random(s.ua8);
+	Random(s.b8);
+	Random(s.ub8);
+	Random(s.a16);
+	Random(s.ua16);
+	Random(s.b16);
+	Random(s.ub16);
+	Random(s.a32);
+	Random(s.ua32);
+	Random(s.b32);
+	Random(s.ub32);
+	Random(s.a64);
+	Random(s.ua64);
+	Random(s.b64);
+	Random(s.ub64);
+// 	Random((uint64_t&)s.f2);
+// 	Random((uint32_t&)s.f1);
+	
+	
+	
+// 	s.a8 = ++I;
+// 	s.ua8 = ++I;
+// 	s.b8 = ++I;
+// 	s.ub8 = ++I;
+// 	s.a16 = ++I;
+// 	s.ua16 = ++I;
+// 	s.b16 = ++I;
+// 	s.ub16 = ++I;
+// 	s.a32 = ++I;
+// 	s.ua32 = ++I;
+// 	s.b32 = ++I;
+// 	s.ub32 = ++I;
+// 	s.a64 = ++I;
+// 	s.ua64 = ++I;
+// 	s.b64 = ++I;
+// 	s.ub64 = ++I;
+	s.f2 = ++I^123412;
+	s.f1 = ++I^43424;
 	
 	s.bytes16 = ((++_b16)&1) + 1;
 	s.bytes32 = ((++_b32)&2) + 1;
@@ -164,7 +194,7 @@ int main() {
 	
 	std::vector<uint8_t> buffer;
 	
-	for(int i=0; i<1; ++i) {
+	for(int i=0; i<16; ++i) {
 		buffer.resize(10000);
 		Random((void*)buffer.data(), buffer.size());
 		buffer.clear();
@@ -181,7 +211,7 @@ int main() {
 		reader.op(s2);
 		
 		printf(" equality: %i -> %s\n", i, s1==s2 ? "true" : "false");
-		s1.cmp(s2);
+// 		s1.cmp(s2);
 	}
 	return 0;
 }
