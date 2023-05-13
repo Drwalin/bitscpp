@@ -74,29 +74,35 @@ namespace bitscpp {
 		// NULL-terminated string
 		inline ByteReader& op(std::string& str);
 		// constant size byte array
-		inline ByteReader& op(uint8_t* data, uint32_t bytes);
-		inline ByteReader& op(int8_t* data, uint32_t bytes);
+		template<typename T>
+		inline ByteReader& op(uint8_t* data, T bytes);
+		template<typename T>
+		inline ByteReader& op(int8_t* data, T bytes);
 		
 		// uint32_t size preceeds size of binary data
 		inline ByteReader& op(std::vector<uint8_t>& binary);
 		
 		
-		inline ByteReader& op(uint8_t& v,  uint32_t bytes);
-		inline ByteReader& op(uint16_t& v, uint32_t bytes);
-		inline ByteReader& op(uint32_t& v, uint32_t bytes);
-		inline ByteReader& op(uint64_t& v, uint32_t bytes);
-		inline ByteReader& op(int8_t& v,   uint32_t bytes);
-		inline ByteReader& op(int16_t& v,  uint32_t bytes);
-		inline ByteReader& op(int32_t& v,  uint32_t bytes);
-		inline ByteReader& op(int64_t& v,  uint32_t bytes);
-		inline ByteReader& op(uint8_t& v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(uint16_t& v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(uint32_t& v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(uint64_t& v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(int8_t& v,   int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(int16_t& v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(int32_t& v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteReader& op(int64_t& v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
+		template<typename T>
+		inline ByteReader& op(uint8_t& v,  T bytes);
+		template<typename T>
+		inline ByteReader& op(uint16_t& v, T bytes);
+		template<typename T>
+		inline ByteReader& op(uint32_t& v, T bytes);
+		template<typename T>
+		inline ByteReader& op(uint64_t& v, T bytes);
+		template<typename T>
+		inline ByteReader& op(int8_t& v,   T bytes);
+		template<typename T>
+		inline ByteReader& op(int16_t& v,  T bytes);
+		template<typename T>
+		inline ByteReader& op(int32_t& v,  T bytes);
+		template<typename T>
+		inline ByteReader& op(int64_t& v,  T bytes);
+		template<typename T>
+		inline ByteReader& op(char& v,     T bytes);
+		template<typename T>
+		inline ByteReader& op(long long& v, T bytes);
 		
 		inline ByteReader& op(uint8_t& v);
 		inline ByteReader& op(uint16_t& v);
@@ -106,21 +112,27 @@ namespace bitscpp {
 		inline ByteReader& op(int16_t& v);
 		inline ByteReader& op(int32_t& v);
 		inline ByteReader& op(int64_t& v);
+		inline ByteReader& op(char& v);
+		inline ByteReader& op(long long& v);
 		
 		
 		inline ByteReader& op(float& v);
 		inline ByteReader& op(double& v);
 		
-		inline ByteReader& op(float& v, float min, float max, uint32_t bytes);
-		inline ByteReader& op(double& v, double min, double max, uint32_t bytes);
+		template<typename Tmin, typename Tmax, typename T>
+		inline ByteReader& op(float& value, Tmin min, Tmax max, T bytes);
+		template<typename Tmin, typename Tmax, typename T>
+		inline ByteReader& op(double& value, Tmin min, Tmax max, T bytes);
 		
-		inline ByteReader& op(float& v, float origin, float min, float max, uint32_t bytes);
-		inline ByteReader& op(double& v, double origin, double min, double max, uint32_t bytes);
+		template<typename Torig, typename Tmin, typename Tmax, typename T>
+		inline ByteReader& op(float& value, Torig origin, Tmin min, Tmax max, T bytes);
+		template<typename Torig, typename Tmin, typename Tmax, typename T>
+		inline ByteReader& op(double& value, Torig origin, Tmin min, Tmax max, T bytes);
 		
 	public:
 		
-		template<typename T, typename... Args>
-		inline ByteReader& op(T* data, uint32_t elements, Args... args) {
+		template<typename T, typename Te, typename... Args>
+		inline ByteReader& op(T* data, Te elements, Args... args) {
 			for(uint32_t i=0; i<elements; ++i)
 				op(data[i], args...);
 			return *this;
@@ -160,66 +172,82 @@ namespace bitscpp {
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(uint8_t* data, uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(uint8_t* data, T bytes) {
 		memcpy(data, buffer+offset, bytes);
 		offset += bytes;
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(int8_t* data, uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(int8_t* data, T bytes) {
 		return op((uint8_t*)data, bytes);
 	}
 	
 	
 	inline ByteReader& ByteReader::op(std::vector<uint8_t>& data) {
 		uint32_t bytes;
-		op(bytes);
+		op(bytes, 4);
 		data.resize(bytes);
 		return this->op((uint8_t*)&(data.front()), bytes);
 	}
 	
 	
 	
-	inline ByteReader& ByteReader::op(uint8_t& v,  uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(uint8_t& v, T bytes) {
 		v = buffer[offset];
 		offset++;
 		return *this;
 	}
-	inline ByteReader& ByteReader::op(uint16_t& v, uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(uint16_t& v, T bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
 			v |= ((uint16_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
-	inline ByteReader& ByteReader::op(uint32_t& v, uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(uint32_t& v, T bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
 			v |= ((uint32_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
-	inline ByteReader& ByteReader::op(uint64_t& v, uint32_t bytes) {
+	template<typename T>
+	inline ByteReader& ByteReader::op(uint64_t& v, T bytes) {
 		v = 0;
 		for(int i=0; i<bytes; ++i)
 			v |= ((uint64_t)buffer[offset++])<<(i<<3);
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(int8_t& v,   uint32_t bytes) { return op(v); }
-	inline ByteReader& ByteReader::op(int16_t& v,  uint32_t bytes) { return op((uint16_t&)v); }
-	inline ByteReader& ByteReader::op(int32_t& v,  uint32_t bytes) { return op((uint32_t&)v, bytes); }
-	inline ByteReader& ByteReader::op(int64_t& v,  uint32_t bytes) { return op((uint64_t&)v, bytes); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(int8_t& v,  T bytes) { return op(v); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(int16_t& v, T bytes) { return op((uint16_t&)v, bytes); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(int32_t& v, T bytes) { return op((uint32_t&)v, bytes); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(int64_t& v, T bytes) { return op((uint64_t&)v, bytes); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(char& v,    T bytes) { return op((uint8_t&)v, bytes); }
+	template<typename T>
+	inline ByteReader& ByteReader::op(long long& v, T bytes) { return op((uint64_t&)v, bytes); }
 	
 	
 	
-	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, (uint32_t)1); }
-	inline ByteReader& ByteReader::op(uint16_t& v) { return op(v, (uint32_t)2); }
-	inline ByteReader& ByteReader::op(uint32_t& v) { return op(v, (uint32_t)4); }
-	inline ByteReader& ByteReader::op(uint64_t& v) { return op(v, (uint32_t)8); }
+	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, 1); }
+	inline ByteReader& ByteReader::op(uint16_t& v) { return op(v, 2); }
+	inline ByteReader& ByteReader::op(uint32_t& v) { return op(v, 4); }
+	inline ByteReader& ByteReader::op(uint64_t& v) { return op(v, 8); }
 	
 	inline ByteReader& ByteReader::op(int8_t& v)  { return op((uint8_t&)v); }
 	inline ByteReader& ByteReader::op(int16_t& v) { return op((uint16_t&)v); }
 	inline ByteReader& ByteReader::op(int32_t& v) { return op((uint32_t&)v); }
 	inline ByteReader& ByteReader::op(int64_t& v) { return op((uint64_t&)v); }
+	inline ByteReader& ByteReader::op(char& v) { return op((uint8_t&)v); }
+	inline ByteReader& ByteReader::op(long long& v) { return op((uint64_t&)v); }
 	
 	
 	
@@ -231,8 +259,10 @@ namespace bitscpp {
 		return op((uint64_t&)value, 8);
 	}
 	
-	inline ByteReader& ByteReader::op(float& value, float min, float max,
-			uint32_t bytes) {
+	
+	template<typename Tmin, typename Tmax, typename T>
+	inline ByteReader& ByteReader::op(float& value, Tmin min, Tmax max,
+			T bytes) {
 		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
 		op(v, bytes);
@@ -240,8 +270,9 @@ namespace bitscpp {
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(double& value, double min, double max,
-			uint32_t bytes) {
+	template<typename Tmin, typename Tmax, typename T>
+	inline ByteReader& ByteReader::op(double& value, Tmin min, Tmax max,
+			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
 		op(v, bytes);
@@ -249,15 +280,17 @@ namespace bitscpp {
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(float& value, float origin, float min,
-			float max, uint32_t bytes) {
+	template<typename Torig, typename Tmin, typename Tmax, typename T>
+	inline ByteReader& ByteReader::op(float& value, Torig origin, Tmin min,
+			Tmax max, T bytes) {
 		op(value, min, max, bytes);
 		value += origin;
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(double& value, double origin, double min,
-			double max, uint32_t bytes) {
+	template<typename Torig, typename Tmin, typename Tmax, typename T>
+	inline ByteReader& ByteReader::op(double& value, Torig origin, Tmin min,
+			Tmax max, T bytes) {
 		op(value, min, max, bytes);
 		value += origin;
 		return *this;

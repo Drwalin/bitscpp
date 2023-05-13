@@ -41,9 +41,9 @@ struct Struct {
 		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str;
 	}
 	
-	uint32_t bytes16;
-	uint32_t bytes32;
-	uint32_t bytes64;
+	long long bytes16;
+	long long bytes32;
+	long long bytes64;
 	
 	uint8_t  a8;
 	int8_t  ua8;
@@ -225,8 +225,8 @@ void Random(Struct& s) {
 	s.f1 = ++I^43424;
 	
 	s.bytes16 = ((++_b16)&1) + 1;
-	s.bytes32 = ((++_b32)&2) + 1;
-	s.bytes64 = ((++_b64)&3) + 1;
+	s.bytes32 = ((++_b32)&3) + 1;
+	s.bytes64 = ((++_b64)&7) + 1;
 		
 	s.a16 &=  (1llu<<(s.bytes16<<3)) - 1;
 	s.ua16 &= (1llu<<(s.bytes16<<3)) - 1;
@@ -257,8 +257,8 @@ void Random(Struct& s) {
 		v = T(); \
 		{ bitscpp::ByteReader s(____buffer.data(), ____buffer.size()); \
 		X;} \
-		if(v == value) std::cout << " TRUE      "; \
-		else std::cout << " FALSE      "; \
+		if(v == value) { std::cout << " TRUE      "; correct++; \
+		} else { std::cout << " FALSE      "; incorrect++; } \
 		std::cout << value << "  ==  " << v << "\n"; \
 }
 
@@ -268,6 +268,8 @@ Tdst RC(Tsrc v) {
 }
 
 int main() {
+	
+	int correct = 0, incorrect = 0;
 	
 	{
 	std::vector<uint8_t> buffer;
@@ -288,6 +290,12 @@ int main() {
 		bitscpp::ByteReader reader(buffer.data(), buffer.size());
 		reader.op(s2);
 		
+		if(s1 == s2) {
+			correct++;
+		} else {
+			incorrect++;
+		}
+		
 		printf(" equality: %i -> %s\n", i, s1==s2 ? "true" : "false");
 // 		s1.cmp(s2);
 	}
@@ -296,8 +304,8 @@ int main() {
 	std::cout << "\n\n\n\n";
 	
 
-	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0.f,200.f,1u));
-	COMPARE(float, 500, RC<float>((uint32_t)(0x43FA000A)), s.op(v,480.f,-20.f,60.f,2u));
+	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
+	COMPARE(float, 500, RC<float>((uint32_t)(0x43FA000A)), s.op(v,480.f,-20,60.0,2));
 	COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
 	
 	
@@ -339,6 +347,7 @@ int main() {
 		COMPARE(decltype(vs), vs, vs2, s.op(v, 1));
 	}
 	
+	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
 	
 	return 0;
 }
