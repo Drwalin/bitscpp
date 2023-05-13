@@ -71,29 +71,35 @@ namespace bitscpp {
 		inline ByteWriter& op(const std::string& str);
 		inline ByteWriter& op(const std::string_view str);
 		// constant size byte array
-		inline ByteWriter& op(uint8_t* const data, uint32_t bytes);
-		inline ByteWriter& op(int8_t* const data, uint32_t bytes);
+		template<typename T>
+		inline ByteWriter& op(uint8_t* const data, T bytes);
+		template<typename T>
+		inline ByteWriter& op(int8_t* const data, T bytes);
 		
 		// uint32_t size preceeds size of binary data
 		inline ByteWriter& op(const std::vector<uint8_t>& binary);
 		
 		
-		inline ByteWriter& op(uint8_t v,  uint32_t bytes);
-		inline ByteWriter& op(uint16_t v, uint32_t bytes);
-		inline ByteWriter& op(uint32_t v, uint32_t bytes);
-		inline ByteWriter& op(uint64_t v, uint32_t bytes);
-		inline ByteWriter& op(int8_t v,   uint32_t bytes);
-		inline ByteWriter& op(int16_t v,  uint32_t bytes);
-		inline ByteWriter& op(int32_t v,  uint32_t bytes);
-		inline ByteWriter& op(int64_t v,  uint32_t bytes);
-		inline ByteWriter& op(uint8_t v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(uint16_t v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(uint32_t v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(uint64_t v, int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(int8_t v,   int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(int16_t v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(int32_t v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
-		inline ByteWriter& op(int64_t v,  int32_t bytes) { return op(v, (uint32_t)bytes); }
+		template<typename T>
+		inline ByteWriter& op(uint8_t v,  T bytes);
+		template<typename T>
+		inline ByteWriter& op(uint16_t v, T bytes);
+		template<typename T>
+		inline ByteWriter& op(uint32_t v, T bytes);
+		template<typename T>
+		inline ByteWriter& op(uint64_t v, T bytes);
+		template<typename T>
+		inline ByteWriter& op(int8_t v,   T bytes);
+		template<typename T>
+		inline ByteWriter& op(int16_t v,  T bytes);
+		template<typename T>
+		inline ByteWriter& op(int32_t v,  T bytes);
+		template<typename T>
+		inline ByteWriter& op(int64_t v,  T bytes);
+		template<typename T>
+		inline ByteWriter& op(char v,  T bytes);
+		template<typename T>
+		inline ByteWriter& op(long long v,  T bytes);
 		
 		inline ByteWriter& op(uint8_t v);
 		inline ByteWriter& op(uint16_t v);
@@ -103,16 +109,22 @@ namespace bitscpp {
 		inline ByteWriter& op(int16_t v);
 		inline ByteWriter& op(int32_t v);
 		inline ByteWriter& op(int64_t v);
+		inline ByteWriter& op(char v);
+		inline ByteWriter& op(long long v);
 		
 		
 		inline ByteWriter& op(float value);
 		inline ByteWriter& op(double value);
 		
-		inline ByteWriter& op(float value, float min, float max, uint32_t bytes);
-		inline ByteWriter& op(double value, double min, double max, uint32_t bytes);
+		template<typename Tmin, typename Tmax, typename T>
+		inline ByteWriter& op(float value, Tmin min, Tmax max, T bytes);
+		template<typename Tmin, typename Tmax, typename T>
+		inline ByteWriter& op(double value, Tmin min, Tmax max, T bytes);
 		
-		inline ByteWriter& op(float value, float origin, float min, float max, uint32_t bytes);
-		inline ByteWriter& op(double value, double origin, double min, double max, uint32_t bytes);
+		template<typename Torig, typename Tmin, typename Tmax, typename T>
+		inline ByteWriter& op(float value, Torig origin, Tmin min, Tmax max, T bytes);
+		template<typename Torig, typename Tmin, typename Tmax, typename T>
+		inline ByteWriter& op(double value, Torig origin, Tmin min, Tmax max, T bytes);
 		
 	public:
 		
@@ -137,56 +149,69 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(const std::string& str) {
-		return op((int8_t*const)str.data(), (uint32_t)str.size()+1);
+		return op((int8_t*const)str.data(), str.size()+1);
 	}
 	
 	inline ByteWriter& ByteWriter::op(const std::string_view str) {
-		return op((int8_t*const)str.data(), (uint32_t)str.size()+1);
+		return op((int8_t*const)str.data(), str.size()+1);
 	}
 	
-	inline ByteWriter& ByteWriter::op(uint8_t*const data, uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(uint8_t*const data, T bytes) {
 		buffer.insert(buffer.end(), data, data+bytes);
 		return *this;
 	}
 	
-	inline ByteWriter& ByteWriter::op(int8_t*const data, uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(int8_t*const data, T bytes) {
 		buffer.insert(buffer.end(), data, data+bytes);
 		return *this;
 	}
 	
 	
 	inline ByteWriter& ByteWriter::op(const std::vector<uint8_t>& binary) {
-		this->op((uint32_t)binary.size());
-		return op((uint8_t*const)binary.data(),
-				(uint32_t)binary.size());
+		this->op((uint32_t)binary.size(), 4);
+		return op((uint8_t*const)binary.data(), binary.size());
 	}
 	
 	
 	
-	inline ByteWriter& ByteWriter::op(uint8_t v,  uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(uint8_t v,  T bytes) {
 		buffer.emplace_back(v);
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint16_t v, uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(uint16_t v, T bytes) {
 		for(int i=0; i<bytes; ++i)
 			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint32_t v, uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(uint32_t v, T bytes) {
 		for(int i=0; i<bytes; ++i)
 			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint64_t v, uint32_t bytes) {
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(uint64_t v, T bytes) {
 		for(int i=0; i<bytes; ++i)
 			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
 		return *this;
 	}
 	
-	inline ByteWriter& ByteWriter::op(int8_t v,   uint32_t bytes) { return op(v); }
-	inline ByteWriter& ByteWriter::op(int16_t v,  uint32_t bytes) { return op((uint16_t)v); }
-	inline ByteWriter& ByteWriter::op(int32_t v,  uint32_t bytes) { return op((uint32_t)v, bytes); }
-	inline ByteWriter& ByteWriter::op(int64_t v,  uint32_t bytes) { return op((uint64_t)v, bytes); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(int8_t v,   T bytes) { return op(v); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(int16_t v,  T bytes) { return op((uint16_t)v, bytes); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(int32_t v,  T bytes) { return op((uint32_t)v, bytes); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(int64_t v,  T bytes) { return op((uint64_t)v, bytes); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(char v,     T bytes) { return op((uint8_t)v, bytes); }
+	template<typename T>
+	inline ByteWriter& ByteWriter::op(long long v, T bytes) { return op((uint64_t)v, bytes); }
 	
 	
 	
@@ -199,6 +224,8 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(int16_t v) { return op((uint16_t)v); }
 	inline ByteWriter& ByteWriter::op(int32_t v) { return op((uint32_t)v); }
 	inline ByteWriter& ByteWriter::op(int64_t v) { return op((uint64_t)v); }
+	inline ByteWriter& ByteWriter::op(char v) { return op((uint8_t)v); }
+	inline ByteWriter& ByteWriter::op(long long v) { return op((uint64_t)v); }
 	
 	
 	
@@ -210,29 +237,34 @@ namespace bitscpp {
 		return op(*(uint64_t*)&value, 8);
 	}
 	
-	inline ByteWriter& ByteWriter::op(float value, float min, float max,
-			uint32_t bytes) {
+		
+	template<typename Tmin, typename Tmax, typename T>
+	inline ByteWriter& ByteWriter::op(float value, Tmin min, Tmax max,
+			T bytes) {
 		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		float pv = value * fmask / (max-min);
 		uint64_t v = pv+0.4f;
 		return op(v, bytes);
 	}
 	
-	inline ByteWriter& ByteWriter::op(double value, double min, double max,
-			uint32_t bytes) {
+	template<typename Tmin, typename Tmax, typename T>
+	inline ByteWriter& ByteWriter::op(double value, Tmin min, Tmax max,
+			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		double pv = value * fmask / (max-min);
 		uint64_t v = pv+0.4f;
 		return op(v, bytes);
 	}
 	
-	inline ByteWriter& ByteWriter::op(float value, float origin, float min,
-			float max, uint32_t bytes) {
+	template<typename Torig, typename Tmin, typename Tmax, typename T>
+	inline ByteWriter& ByteWriter::op(float value, Torig origin, Tmin min,
+			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
 	
-	inline ByteWriter& ByteWriter::op(double value, double origin, double min,
-			double max, uint32_t bytes) {
+	template<typename Torig, typename Tmin, typename Tmax, typename T>
+	inline ByteWriter& ByteWriter::op(double value, Torig origin, Tmin min,
+			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
 } // namespace bitscpp
