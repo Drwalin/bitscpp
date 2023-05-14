@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
+#include <tuple>
 
 #include "ByteWriter.hpp"
 
