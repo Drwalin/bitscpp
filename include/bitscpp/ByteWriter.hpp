@@ -20,6 +20,7 @@
 #define BITSCPP_BYTE_WRITER_HPP
 
 #include <cinttypes>
+#include <cstring>
 
 #include <string>
 #include <vector>
@@ -185,20 +186,38 @@ namespace bitscpp {
 	}
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint16_t v, T bytes) {
-		for(int i=0; i<bytes; ++i)
-			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
+		const uint32_t s = buffer.size();
+		buffer.resize(buffer.size()+bytes);
+		if constexpr (IsBigEndian()) {
+			memcpy(buffer.data()+s, ((uint8_t*)&v)+2-bytes, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[s+i] = v>>((bytes-i-1)<<3);
+		}
 		return *this;
 	}
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint32_t v, T bytes) {
-		for(int i=0; i<bytes; ++i)
-			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
+		const uint32_t s = buffer.size();
+		buffer.resize(buffer.size()+bytes);
+		if constexpr (IsBigEndian()) {
+			memcpy(buffer.data()+s, ((uint8_t*)&v)+4-bytes, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[s+i] = v>>((bytes-i-1)<<3);
+		}
 		return *this;
 	}
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint64_t v, T bytes) {
-		for(int i=0; i<bytes; ++i)
-			buffer.emplace_back((uint8_t)((v)>>(i<<3)));
+		const uint32_t s = buffer.size();
+		buffer.resize(buffer.size()+bytes);
+		if constexpr (IsBigEndian()) {
+			memcpy(buffer.data()+s, ((uint8_t*)&v)+8-bytes, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[s+i] = v>>((bytes-i-1)<<3);
+		}
 		return *this;
 	}
 	
@@ -219,18 +238,21 @@ namespace bitscpp {
 	
 	inline ByteWriter& ByteWriter::op(uint8_t v)  { return op(v, (uint32_t)1); }
 	inline ByteWriter& ByteWriter::op(uint16_t v) {
+// 		return op(v, 2);
 		const uint32_t s = buffer.size();
 		buffer.resize(s+2);
 		*(uint16_t*)(buffer.data()+s) = HostToNetworkUint<uint16_t>(v);
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint32_t v) {
+// 		return op(v, 4);
 		const uint32_t s = buffer.size();
 		buffer.resize(s+4);
 		*(uint32_t*)(buffer.data()+s) = HostToNetworkUint<uint32_t>(v);
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint64_t v) {
+// 		return op(v, 8);
 		const uint32_t s = buffer.size();
 		buffer.resize(s+8);
 		*(uint64_t*)(buffer.data()+s) = HostToNetworkUint<uint64_t>(v);
