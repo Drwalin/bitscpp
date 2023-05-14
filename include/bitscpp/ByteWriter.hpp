@@ -187,36 +187,42 @@ namespace bitscpp {
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint16_t v, T bytes) {
 		const uint32_t s = buffer.size();
+		buffer.reserve(buffer.size()+2);
 		buffer.resize(buffer.size()+bytes);
-		if constexpr (IsBigEndian()) {
-			memcpy(buffer.data()+s, ((uint8_t*)&v)+2-bytes, bytes);
+		if constexpr (!IsBigEndian()) {
+			*(uint16_t*)(buffer.data()+s) = v;
+// 			memcpy(buffer.data()+s, ((uint8_t*)&v), 2);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[s+i] = v>>((bytes-i-1)<<3);
+				buffer[s+i] = v >> (i<<3);
 		}
 		return *this;
 	}
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint32_t v, T bytes) {
 		const uint32_t s = buffer.size();
+		buffer.reserve(buffer.size()+4);
 		buffer.resize(buffer.size()+bytes);
-		if constexpr (IsBigEndian()) {
-			memcpy(buffer.data()+s, ((uint8_t*)&v)+4-bytes, bytes);
+		if constexpr (!IsBigEndian()) {
+			*(uint32_t*)(buffer.data()+s) = v;
+// 			memcpy(buffer.data()+s, ((uint8_t*)&v), bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[s+i] = v>>((bytes-i-1)<<3);
+				buffer[s+i] = v >> (i<<3);
 		}
 		return *this;
 	}
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint64_t v, T bytes) {
 		const uint32_t s = buffer.size();
+		buffer.reserve(buffer.size()+8);
 		buffer.resize(buffer.size()+bytes);
-		if constexpr (IsBigEndian()) {
-			memcpy(buffer.data()+s, ((uint8_t*)&v)+8-bytes, bytes);
+		if constexpr (!IsBigEndian()) {
+			*(uint64_t*)(buffer.data()+s) = v;
+// 			memcpy(buffer.data()+s, ((uint8_t*)&v), bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[s+i] = v>>((bytes-i-1)<<3);
+				buffer[s+i] = v >> (i<<3);
 		}
 		return *this;
 	}
@@ -281,7 +287,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(float value, Tmin min, Tmax max,
 			T bytes) {
 		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
-		float pv = value * fmask / (max-min);
+		float pv = (value-min) * fmask / (max-min);
 		uint64_t v = pv+0.4f;
 		return op(v, bytes);
 	}
@@ -290,7 +296,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(double value, Tmin min, Tmax max,
 			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
-		double pv = value * fmask / (max-min);
+		double pv = (value-min) * fmask / (max-min);
 		uint64_t v = pv+0.4f;
 		return op(v, bytes);
 	}

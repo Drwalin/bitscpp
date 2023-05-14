@@ -205,11 +205,13 @@ namespace bitscpp {
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint16_t& v, T bytes) {
 		v = 0;
-		if constexpr (IsBigEndian()) {
-			memcpy(((uint8_t*)&v)+2-bytes, buffer+offset, bytes);
+		if constexpr (!IsBigEndian()) {
+			v = (*(uint16_t*)(buffer+offset))
+				& (0xFFFF >> ((2-bytes)<<3));
+// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v = (v<<8) | buffer[offset+i];
+				v |= ((uint16_t)(buffer[offset+i])) << (i<<3);
 		}
 		offset += bytes;
 		return *this;
@@ -217,11 +219,13 @@ namespace bitscpp {
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint32_t& v, T bytes) {
 		v = 0;
-		if constexpr (IsBigEndian()) {
-			memcpy(((uint8_t*)&v)+4-bytes, buffer+offset, bytes);
+		if constexpr (!IsBigEndian()) {
+			v = (*(uint32_t*)(buffer+offset))
+				& (0xFFFFFFFF >> ((4-bytes)<<3));
+// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v = (v<<8) | buffer[offset+i];
+				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
 		}
 		offset += bytes;
 		return *this;
@@ -229,11 +233,13 @@ namespace bitscpp {
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint64_t& v, T bytes) {
 		v = 0;
-		if constexpr (IsBigEndian()) {
-			memcpy(((uint8_t*)&v)+8-bytes, buffer+offset, bytes);
+		if constexpr (!IsBigEndian()) {
+			v = (*(uint64_t*)(buffer+offset))
+				& (0xFFFFFFFFFFFFFFFFll >> ((8-bytes)<<3));
+// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v = (v<<8) | buffer[offset+i];
+				v |= ((uint64_t)(buffer[offset+i])) << (i<<3);
 		}
 		offset += bytes;
 		return *this;
@@ -298,7 +304,7 @@ namespace bitscpp {
 		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
 		op(v, bytes);
-		value = v * (max-min)/fmask;
+		value = (v * (max-min)/fmask) + min;
 		return *this;
 	}
 	
@@ -308,7 +314,7 @@ namespace bitscpp {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
 		op(v, bytes);
-		value = v * (max-min)/fmask;
+		value = (v * (max-min)/fmask) + min;
 		return *this;
 	}
 	
