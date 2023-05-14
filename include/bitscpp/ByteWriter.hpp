@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 
+#include "Endianness.hpp"
+
 namespace bitscpp {
 	
 	class ByteWriter;
@@ -216,9 +218,24 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(uint8_t v)  { return op(v, (uint32_t)1); }
-	inline ByteWriter& ByteWriter::op(uint16_t v) { return op(v, (uint32_t)2); }
-	inline ByteWriter& ByteWriter::op(uint32_t v) { return op(v, (uint32_t)4); }
-	inline ByteWriter& ByteWriter::op(uint64_t v) { return op(v, (uint32_t)8); }
+	inline ByteWriter& ByteWriter::op(uint16_t v) {
+		const uint32_t s = buffer.size();
+		buffer.resize(s+2);
+		*(uint16_t*)(buffer.data()+s) = HostToNetworkUint<uint16_t>(v);
+		return *this;
+	}
+	inline ByteWriter& ByteWriter::op(uint32_t v) {
+		const uint32_t s = buffer.size();
+		buffer.resize(s+4);
+		*(uint32_t*)(buffer.data()+s) = HostToNetworkUint<uint32_t>(v);
+		return *this;
+	}
+	inline ByteWriter& ByteWriter::op(uint64_t v) {
+		const uint32_t s = buffer.size();
+		buffer.resize(s+8);
+		*(uint64_t*)(buffer.data()+s) = HostToNetworkUint<uint64_t>(v);
+		return *this;
+	}
 	
 	inline ByteWriter& ByteWriter::op(int8_t v)  { return op((uint8_t)v); }
 	inline ByteWriter& ByteWriter::op(int16_t v) { return op((uint16_t)v); }

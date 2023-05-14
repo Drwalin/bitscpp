@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+#include "Endianness.hpp"
+
 namespace bitscpp {
 	
 	
@@ -237,10 +239,22 @@ namespace bitscpp {
 	
 	
 	
-	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, 1); }
-	inline ByteReader& ByteReader::op(uint16_t& v) { return op(v, 2); }
-	inline ByteReader& ByteReader::op(uint32_t& v) { return op(v, 4); }
-	inline ByteReader& ByteReader::op(uint64_t& v) { return op(v, 8); }
+	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, (uint32_t)1); }
+	inline ByteReader& ByteReader::op(uint16_t& v) {
+		v = HostToNetworkUint<uint16_t>(*(uint16_t*)(buffer+offset));
+		offset += 2;
+		return *this;
+	}
+	inline ByteReader& ByteReader::op(uint32_t& v) {
+		v = HostToNetworkUint<uint32_t>(*(uint32_t*)(buffer+offset));
+		offset += 4;
+		return *this;
+	}
+	inline ByteReader& ByteReader::op(uint64_t& v) {
+		v = HostToNetworkUint<uint64_t>(*(uint64_t*)(buffer+offset));
+		offset += 8;
+		return *this;
+	}
 	
 	inline ByteReader& ByteReader::op(int8_t& v)  { return op((uint8_t&)v); }
 	inline ByteReader& ByteReader::op(int16_t& v) { return op((uint16_t&)v); }
