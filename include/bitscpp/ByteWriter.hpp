@@ -179,7 +179,11 @@ namespace bitscpp {
 	}
 	
 	inline ByteWriter& ByteWriter::op(const std::string_view str) {
-		return op((int8_t*const)str.data(), str.size()+1);
+		reserve(offset + str.size()+1);
+		memcpy(ptr+offset, str.data(), str.size());
+		ptr[offset+str.size()] = 0;
+		offset += str.size()+1;
+		return *this;
 	}
 	
 	template<typename T>
@@ -295,20 +299,20 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(float value) {
-		return op(*(uint32_t*)&value, 4);
+		return op(*(uint32_t*)&value);
 	}
 	
 	inline ByteWriter& ByteWriter::op(double value) {
-		return op(*(uint64_t*)&value, 8);
+		return op(*(uint64_t*)&value);
 	}
 	
 		
 	template<typename Tmin, typename Tmax, typename T>
 	inline ByteWriter& ByteWriter::op(float value, Tmin min, Tmax max,
 			T bytes) {
-		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
-		float pv = (value-min) * fmask / (max-min);
-		uint64_t v = pv+0.4f;
+		float fmask = (((uint32_t)1)<<(bytes<<3))-1;
+		float pv = (value-min) * (fmask / (max-min));
+		uint32_t v = pv+0.4f;
 		return op(v, bytes);
 	}
 	
@@ -316,7 +320,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(double value, Tmin min, Tmax max,
 			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
-		double pv = (value-min) * fmask / (max-min);
+		double pv = (value-min) * (fmask / (max-min));
 		uint64_t v = pv+0.4f;
 		return op(v, bytes);
 	}
