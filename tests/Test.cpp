@@ -305,9 +305,16 @@ int main() {
 	
 
 	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
-	COMPARE(float, 500, RC<float>((uint32_t)(0x43FA000A)), s.op(v,480.f,-20,60.0,2));
+	COMPARE(float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
 	COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
 	
+	COMPARE(float, -1, -1, s.op(v,-1,1,1));
+	COMPARE(float, 1, 1, s.op(v,-1,1,1));
+// 	COMPARE(float, 0, 0, s.op(v,-1,1,1));
+// 	COMPARE(float, -0.5, -0.5, s.op(v,-1,1,1));
+// 	COMPARE(float, 0.5, 0.5, s.op(v,-1,1,1));
+// 	COMPARE(float, -0.25, -0.25, s.op(v,-1,1,1));
+// 	COMPARE(float, 0.25, 0.25, s.op(v,-1,1,1));
 	
 	COMPARE(std::string, "123456", "123456", s.op(v));
 	{

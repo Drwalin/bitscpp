@@ -45,7 +45,7 @@ namespace bitscpp {
 	
 	template<typename T>
 	inline T HostToNetworkUint(T v) {
-		if constexpr (IsBigEndian()) {
+		if constexpr (!IsBigEndian()) {
 			return v;
 		} else {
 			if constexpr (sizeof(T) == 1) {
