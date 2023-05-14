@@ -29,29 +29,48 @@
 
 namespace bitscpp {
 	
-	
+	template<bool __safeReading = true>
 	class ByteReader;
 	
 	template<typename T, typename... Args>
-	inline ByteReader& op(ByteReader& reader, T& data, Args... args) {
+	inline ByteReader<true>& op(ByteReader<true>& reader, T& data, Args... args) {
+		data.__ByteStream_op(reader, args...);
+		return reader;
+	}
+	
+	template<typename T, typename... Args>
+	inline ByteReader<false>& op(ByteReader<false>& reader, T& data, Args... args) {
 		data.__ByteStream_op(reader, args...);
 		return reader;
 	}
 	
 	namespace impl {
 		template<typename T, typename... Args>
-		static inline ByteReader& __op_ptr(ByteReader& reader, T* data, Args... args) {
+		static inline ByteReader<true>& __op_ptr(ByteReader<true>& reader, T* data, Args... args) {
 			op(reader, *data, args...);
 			return reader;
 		}
 		
 		template<typename T, typename... Args>
-		static inline ByteReader& __op_ref(ByteReader& reader, T& data, Args... args) {
+		static inline ByteReader<true>& __op_ref(ByteReader<true>& reader, T& data, Args... args) {
+			op(reader, data, args...);
+			return reader;
+		}
+		
+		template<typename T, typename... Args>
+		static inline ByteReader<false>& __op_ptr(ByteReader<false>& reader, T* data, Args... args) {
+			op(reader, *data, args...);
+			return reader;
+		}
+		
+		template<typename T, typename... Args>
+		static inline ByteReader<false>& __op_ref(ByteReader<false>& reader, T& data, Args... args) {
 			op(reader, data, args...);
 			return reader;
 		}
 	}
 	
+	template<bool __safeReading>
 	class ByteReader {
 	public:
 		
@@ -69,7 +88,10 @@ namespace bitscpp {
 		
 	public:
 		
-		inline ByteReader(const uint8_t* buffer, uint32_t size) : buffer(buffer), size(size), offset(0) {}
+		inline ByteReader(const uint8_t* buffer, uint32_t size) :
+				buffer(buffer), size(size), offset(0),
+				errorReading_bufferToSmall(false) {
+		}
 		
 		
 		
@@ -158,37 +180,74 @@ namespace bitscpp {
 			return offset < size;
 		}
 		
+		inline bool has_bytes_to_read(uint32_t bytes) const {
+			if constexpr (__safeReading) {
+				return offset+bytes <= size;
+			} else {
+				return true;
+			}
+		}
+		
 	private:
 		
 		const uint8_t* buffer;
 		const uint32_t size;
 		uint32_t offset;
+		
+		bool errorReading_bufferToSmall;
 	};
 	
 	
 	
-	inline ByteReader& ByteReader::op(std::string& str) {
-		str = (char*)(buffer+offset);
-		offset += str.size()+1;
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string& str) {
+		if constexpr (__safeReading) {
+			const void* ptr = memchr(buffer+offset, 0, size-offset);
+			if(!ptr) {
+				errorReading_bufferToSmall = true;
+			} else {
+				str.clear();
+				str.insert(str.begin(), (char*)buffer+offset, (char*)ptr);
+				offset += str.size() + 1;
+			}
+		} else {
+			str = (char*)(buffer+offset);
+			offset += str.size()+1;
+		}
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(uint8_t* data, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t* data, T bytes) {
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		memcpy(data, buffer+offset, bytes);
 		offset += bytes;
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(int8_t* data, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int8_t* data, T bytes) {
 		return op((uint8_t*)data, bytes);
 	}
 	
 	
-	inline ByteReader& ByteReader::op(std::vector<uint8_t>& data) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::vector<uint8_t>& data) {
+		if(!has_bytes_to_read(4)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		uint32_t bytes;
 		op(bytes);
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		data.resize(bytes);
 		memcpy(data.data(), buffer+offset, bytes);
 		offset += bytes;
@@ -197,14 +256,24 @@ namespace bitscpp {
 	
 	
 	
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(uint8_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t& v, T bytes) {
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		v = buffer[offset];
 		offset++;
 		return *this;
 	}
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(uint16_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint16_t& v, T bytes) {
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint16_t*)(buffer+offset))
 				& (0xFFFF >> ((2-bytes)<<3));
@@ -216,8 +285,13 @@ namespace bitscpp {
 		offset += bytes;
 		return *this;
 	}
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(uint32_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint32_t& v, T bytes) {
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint32_t*)(buffer+offset))
 				& (0xFFFFFFFF >> ((4-bytes)<<3));
@@ -229,8 +303,13 @@ namespace bitscpp {
 		offset += bytes;
 		return *this;
 	}
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(uint64_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint64_t& v, T bytes) {
+		if(!has_bytes_to_read(bytes)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint64_t*)(buffer+offset))
 				& (0xFFFFFFFFFFFFFFFFll >> ((8-bytes)<<3));
@@ -243,58 +322,95 @@ namespace bitscpp {
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(int8_t& v,  T bytes) { return op(v); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int8_t& v,  T bytes) { return op(v); }
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(int16_t& v, T bytes) { return op((uint16_t&)v, bytes); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int16_t& v, T bytes) { return op((uint16_t&)v, bytes); }
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(int32_t& v, T bytes) { return op((uint32_t&)v, bytes); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int32_t& v, T bytes) { return op((uint32_t&)v, bytes); }
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(int64_t& v, T bytes) { return op((uint64_t&)v, bytes); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int64_t& v, T bytes) { return op((uint64_t&)v, bytes); }
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(char& v,    T bytes) { return op((uint8_t&)v, bytes); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(char& v,    T bytes) { return op((uint8_t&)v, bytes); }
+	template<bool __safeReading>
 	template<typename T>
-	inline ByteReader& ByteReader::op(long long& v, T bytes) { return op((uint64_t&)v, bytes); }
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(long long& v, T bytes) { return op((uint64_t&)v, bytes); }
 	
 	
 	
-	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, (uint32_t)1); }
-	inline ByteReader& ByteReader::op(uint16_t& v) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t& v)  {
+		if(!has_bytes_to_read(1)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
+		return op(v, (uint32_t)1);
+	}
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint16_t& v) {
+		if(!has_bytes_to_read(2)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		v = HostToNetworkUint<uint16_t>(*(uint16_t*)(buffer+offset));
 		offset += 2;
 		return *this;
 	}
-	inline ByteReader& ByteReader::op(uint32_t& v) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint32_t& v) {
+		if(!has_bytes_to_read(4)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		v = HostToNetworkUint<uint32_t>(*(uint32_t*)(buffer+offset));
 		offset += 4;
 		return *this;
 	}
-	inline ByteReader& ByteReader::op(uint64_t& v) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint64_t& v) {
+		if(!has_bytes_to_read(8)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
 		v = HostToNetworkUint<uint64_t>(*(uint64_t*)(buffer+offset));
 		offset += 8;
 		return *this;
 	}
 	
-	inline ByteReader& ByteReader::op(int8_t& v)  { return op((uint8_t&)v); }
-	inline ByteReader& ByteReader::op(int16_t& v) { return op((uint16_t&)v); }
-	inline ByteReader& ByteReader::op(int32_t& v) { return op((uint32_t&)v); }
-	inline ByteReader& ByteReader::op(int64_t& v) { return op((uint64_t&)v); }
-	inline ByteReader& ByteReader::op(char& v) { return op((uint8_t&)v); }
-	inline ByteReader& ByteReader::op(long long& v) { return op((uint64_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int8_t& v)  { return op((uint8_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int16_t& v) { return op((uint16_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int32_t& v) { return op((uint32_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int64_t& v) { return op((uint64_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(char& v) { return op((uint8_t&)v); }
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(long long& v) { return op((uint64_t&)v); }
 	
 	
 	
-	inline ByteReader& ByteReader::op(float& value) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(float& value) {
 		return op((uint32_t&)value);
 	}
 	
-	inline ByteReader& ByteReader::op(double& value) {
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(double& value) {
 		return op((uint64_t&)value);
 	}
 	
 	
+	template<bool __safeReading>
 	template<typename Tmin, typename Tmax, typename T>
-	inline ByteReader& ByteReader::op(float& value, Tmin min, Tmax max,
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(float& value, Tmin min, Tmax max,
 			T bytes) {
 		float fmask = (((uint32_t)1)<<(bytes<<3))-1;
 		uint32_t v = 0;
@@ -303,8 +419,9 @@ namespace bitscpp {
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename Tmin, typename Tmax, typename T>
-	inline ByteReader& ByteReader::op(double& value, Tmin min, Tmax max,
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(double& value, Tmin min, Tmax max,
 			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
@@ -313,16 +430,18 @@ namespace bitscpp {
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename Torig, typename Tmin, typename Tmax, typename T>
-	inline ByteReader& ByteReader::op(float& value, Torig origin, Tmin min,
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(float& value, Torig origin, Tmin min,
 			Tmax max, T bytes) {
 		op(value, min, max, bytes);
 		value += origin;
 		return *this;
 	}
 	
+	template<bool __safeReading>
 	template<typename Torig, typename Tmin, typename Tmax, typename T>
-	inline ByteReader& ByteReader::op(double& value, Torig origin, Tmin min,
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(double& value, Torig origin, Tmin min,
 			Tmax max, T bytes) {
 		op(value, min, max, bytes);
 		value += origin;
