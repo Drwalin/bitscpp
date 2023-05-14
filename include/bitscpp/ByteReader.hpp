@@ -142,10 +142,10 @@ namespace bitscpp {
 		
 		template<typename T, typename... Args>
 		inline ByteReader& op(std::vector<T>& arr, Args... args) {
-			uint32_t bytes;
-			op(bytes);
-			arr.resize(bytes);
-			return op<T, Args...>(arr.data(), bytes, args...);
+			uint32_t elems;
+			op(elems);
+			arr.resize(elems);
+			return op<T, Args...>(arr.data(), elems, args...);
 		}
 		
 		
@@ -168,8 +168,7 @@ namespace bitscpp {
 	
 	
 	inline ByteReader& ByteReader::op(std::string& str) {
-		str.clear();
-		str = (char*)buffer+offset;
+		str = (char*)(buffer+offset);
 		offset += str.size()+1;
 		return *this;
 	}
@@ -189,9 +188,11 @@ namespace bitscpp {
 	
 	inline ByteReader& ByteReader::op(std::vector<uint8_t>& data) {
 		uint32_t bytes;
-		op(bytes, 4);
+		op(bytes);
 		data.resize(bytes);
-		return this->op((uint8_t*)&(data.front()), bytes);
+		memcpy(data.data(), buffer+offset, bytes);
+		offset += bytes;
+		return *this;
 	}
 	
 	
@@ -204,11 +205,11 @@ namespace bitscpp {
 	}
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint16_t& v, T bytes) {
-		v = 0;
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint16_t*)(buffer+offset))
 				& (0xFFFF >> ((2-bytes)<<3));
 		} else {
+			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint16_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -217,11 +218,11 @@ namespace bitscpp {
 	}
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint32_t& v, T bytes) {
-		v = 0;
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint32_t*)(buffer+offset))
 				& (0xFFFFFFFF >> ((4-bytes)<<3));
 		} else {
+			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -230,11 +231,11 @@ namespace bitscpp {
 	}
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint64_t& v, T bytes) {
-		v = 0;
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint64_t*)(buffer+offset))
 				& (0xFFFFFFFFFFFFFFFFll >> ((8-bytes)<<3));
 		} else {
+			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint64_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -284,21 +285,21 @@ namespace bitscpp {
 	
 	
 	inline ByteReader& ByteReader::op(float& value) {
-		return op((uint32_t&)value, 4);
+		return op((uint32_t&)value);
 	}
 	
 	inline ByteReader& ByteReader::op(double& value) {
-		return op((uint64_t&)value, 8);
+		return op((uint64_t&)value);
 	}
 	
 	
 	template<typename Tmin, typename Tmax, typename T>
 	inline ByteReader& ByteReader::op(float& value, Tmin min, Tmax max,
 			T bytes) {
-		float fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
-		uint64_t v = 0;
+		float fmask = (((uint32_t)1)<<(bytes<<3))-1;
+		uint32_t v = 0;
 		op(v, bytes);
-		value = (v * (max-min)/fmask) + min;
+		value = (v * ((max-min)/fmask)) + min;
 		return *this;
 	}
 	
@@ -308,7 +309,7 @@ namespace bitscpp {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		uint64_t v = 0;
 		op(v, bytes);
-		value = (v * (max-min)/fmask) + min;
+		value = (v * ((max-min)/fmask)) + min;
 		return *this;
 	}
 	
