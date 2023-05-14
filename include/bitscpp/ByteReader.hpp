@@ -208,7 +208,6 @@ namespace bitscpp {
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint16_t*)(buffer+offset))
 				& (0xFFFF >> ((2-bytes)<<3));
-// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint16_t)(buffer[offset+i])) << (i<<3);
@@ -222,7 +221,6 @@ namespace bitscpp {
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint32_t*)(buffer+offset))
 				& (0xFFFFFFFF >> ((4-bytes)<<3));
-// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
@@ -236,7 +234,6 @@ namespace bitscpp {
 		if constexpr (!IsBigEndian()) {
 			v = (*(uint64_t*)(buffer+offset))
 				& (0xFFFFFFFFFFFFFFFFll >> ((8-bytes)<<3));
-// 			memcpy(((uint8_t*)&v), buffer+offset, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint64_t)(buffer[offset+i])) << (i<<3);
@@ -262,19 +259,16 @@ namespace bitscpp {
 	
 	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, (uint32_t)1); }
 	inline ByteReader& ByteReader::op(uint16_t& v) {
-// 		return op(v, 2);
 		v = HostToNetworkUint<uint16_t>(*(uint16_t*)(buffer+offset));
 		offset += 2;
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint32_t& v) {
-// 		return op(v, 4);
 		v = HostToNetworkUint<uint32_t>(*(uint32_t*)(buffer+offset));
 		offset += 4;
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint64_t& v) {
-// 		return op(v, 8);
 		v = HostToNetworkUint<uint64_t>(*(uint64_t*)(buffer+offset));
 		offset += 8;
 		return *this;
