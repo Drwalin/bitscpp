@@ -205,22 +205,37 @@ namespace bitscpp {
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint16_t& v, T bytes) {
 		v = 0;
-		for(int i=0; i<bytes; ++i)
-			v |= ((uint16_t)buffer[offset++])<<(i<<3);
+		if constexpr (IsBigEndian()) {
+			memcpy(((uint8_t*)&v)+2-bytes, buffer+offset, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				v = (v<<8) | buffer[offset+i];
+		}
+		offset += bytes;
 		return *this;
 	}
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint32_t& v, T bytes) {
 		v = 0;
-		for(int i=0; i<bytes; ++i)
-			v |= ((uint32_t)buffer[offset++])<<(i<<3);
+		if constexpr (IsBigEndian()) {
+			memcpy(((uint8_t*)&v)+4-bytes, buffer+offset, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				v = (v<<8) | buffer[offset+i];
+		}
+		offset += bytes;
 		return *this;
 	}
 	template<typename T>
 	inline ByteReader& ByteReader::op(uint64_t& v, T bytes) {
 		v = 0;
-		for(int i=0; i<bytes; ++i)
-			v |= ((uint64_t)buffer[offset++])<<(i<<3);
+		if constexpr (IsBigEndian()) {
+			memcpy(((uint8_t*)&v)+8-bytes, buffer+offset, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				v = (v<<8) | buffer[offset+i];
+		}
+		offset += bytes;
 		return *this;
 	}
 	
@@ -241,16 +256,19 @@ namespace bitscpp {
 	
 	inline ByteReader& ByteReader::op(uint8_t& v)  { return op(v, (uint32_t)1); }
 	inline ByteReader& ByteReader::op(uint16_t& v) {
+// 		return op(v, 2);
 		v = HostToNetworkUint<uint16_t>(*(uint16_t*)(buffer+offset));
 		offset += 2;
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint32_t& v) {
+// 		return op(v, 4);
 		v = HostToNetworkUint<uint32_t>(*(uint32_t*)(buffer+offset));
 		offset += 4;
 		return *this;
 	}
 	inline ByteReader& ByteReader::op(uint64_t& v) {
+// 		return op(v, 8);
 		v = HostToNetworkUint<uint64_t>(*(uint64_t*)(buffer+offset));
 		offset += 8;
 		return *this;
