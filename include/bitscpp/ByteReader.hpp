@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "Endianness.hpp"
@@ -97,6 +98,7 @@ namespace bitscpp {
 		
 		// NULL-terminated string
 		inline ByteReader& op(std::string& str);
+		inline ByteReader& op(std::string_view& str);
 		// constant size byte array
 		template<typename T>
 		inline ByteReader& op(uint8_t* data, T bytes);
@@ -198,6 +200,19 @@ namespace bitscpp {
 	};
 	
 	
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string_view& str) {
+		const void* ptr = memchr(buffer+offset, 0, size-offset);
+		if(!ptr) {
+			str = std::string_view();
+			errorReading_bufferToSmall = true;
+		} else {
+			ssize_t len = ((char*)ptr) - ((char*)buffer+offset);
+			str = std::string_view((char*)buffer+offset, len);
+			offset += str.size() + 1;
+		}
+		return *this;
+	}
 	
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string& str) {
