@@ -190,6 +190,10 @@ namespace bitscpp {
 			}
 		}
 		
+		inline uint32_t get_offset() const {
+			return offset;
+		}
+		
 	private:
 		
 		const uint8_t* buffer;
