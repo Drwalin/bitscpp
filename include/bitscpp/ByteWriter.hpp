@@ -83,6 +83,7 @@ namespace bitscpp {
 		// NULL-terminated string
 		inline ByteWriter& op(const std::string& str);
 		inline ByteWriter& op(const std::string_view str);
+		inline ByteWriter& op(const char* str);
 		// constant size byte array
 		template<typename T>
 		inline ByteWriter& op(uint8_t* const data, T bytes);
@@ -185,6 +186,11 @@ namespace bitscpp {
 		ptr[offset+str.size()] = 0;
 		offset += str.size()+1;
 		return *this;
+	}
+	
+	inline ByteWriter& ByteWriter::op(const char* str) {
+		ssize_t len = strlen(str);
+		return op(std::string_view(str, len));
 	}
 	
 	template<typename T>
