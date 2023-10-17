@@ -198,6 +198,10 @@ namespace bitscpp {
 			return buffer;
 		}
 		
+		inline const uint32_t get_remaining_bytes() const {
+			return size-offset;
+		}
+		
 	private:
 		
 		const uint8_t* buffer;
