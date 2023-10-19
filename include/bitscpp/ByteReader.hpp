@@ -89,6 +89,10 @@ namespace bitscpp {
 		
 	public:
 		
+		inline ByteReader(const uint8_t* buffer, uint32_t offset, uint32_t size) :
+				buffer(buffer), size(size), offset(offset),
+				errorReading_bufferToSmall(false) {
+		}
 		inline ByteReader(const uint8_t* buffer, uint32_t size) :
 				buffer(buffer), size(size), offset(0),
 				errorReading_bufferToSmall(false) {
@@ -202,10 +206,10 @@ namespace bitscpp {
 			return size-offset;
 		}
 		
-	private:
+	protected:
 		
-		const uint8_t* buffer;
-		const uint32_t size;
+		uint8_t const* buffer;
+		uint32_t size;
 		uint32_t offset;
 		
 		bool errorReading_bufferToSmall;
