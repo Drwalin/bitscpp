@@ -20,10 +20,7 @@
 #define BITSCPP_BYTE_READER_EXTENSIONS_HPP
 
 #include <set>
-#include <map>
-#include <unordered_map>
 #include <unordered_set>
-#include <functional>
 
 #include "ByteReader.hpp"
 
