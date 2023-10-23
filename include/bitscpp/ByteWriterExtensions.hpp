@@ -20,10 +20,7 @@
 #define BITSCPP_BYTE_WRITER_EXTENSIONS_HPP
 
 #include <set>
-#include <map>
-#include <unordered_map>
 #include <unordered_set>
-#include <functional>
 #include <tuple>
 
 #include "ByteWriter.hpp"
