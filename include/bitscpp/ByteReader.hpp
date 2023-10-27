@@ -305,11 +305,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
+		v = 0;
 		if constexpr (!IsBigEndian()) {
-			v = (*(uint16_t*)(buffer+offset))
-				& (0xFFFF >> ((2-bytes)<<3));
+			memcpy(&v, buffer+offset, bytes);
 		} else {
-			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint16_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -323,11 +322,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
+		v = 0;
 		if constexpr (!IsBigEndian()) {
-			v = (*(uint32_t*)(buffer+offset))
-				& (0xFFFFFFFF >> ((4-bytes)<<3));
+			memcpy(&v, buffer+offset, bytes);
 		} else {
-			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -341,11 +339,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
+		v = 0;
 		if constexpr (!IsBigEndian()) {
-			v = (*(uint64_t*)(buffer+offset))
-				& (0xFFFFFFFFFFFFFFFFll >> ((8-bytes)<<3));
+			memcpy(&v, buffer+offset, bytes);
 		} else {
-			v = 0;
 			for(int i=0; i<bytes; ++i)
 				v |= ((uint64_t)(buffer[offset+i])) << (i<<3);
 		}
@@ -388,7 +385,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		v = HostToNetworkUint<uint16_t>(*(uint16_t*)(buffer+offset));
+		memcpy(&v, buffer+offset, sizeof(v));
+		if constexpr (IsBigEndian()) {
+			v = HostToNetworkUint<uint16_t>(v);
+		}
 		offset += 2;
 		return *this;
 	}
@@ -398,7 +398,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		v = HostToNetworkUint<uint32_t>(*(uint32_t*)(buffer+offset));
+		memcpy(&v, buffer+offset, sizeof(v));
+		if constexpr (IsBigEndian()) {
+			v = HostToNetworkUint<uint32_t>(v);
+		}
 		offset += 4;
 		return *this;
 	}
@@ -408,7 +411,10 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		v = HostToNetworkUint<uint64_t>(*(uint64_t*)(buffer+offset));
+		memcpy(&v, buffer+offset, sizeof(v));
+		if constexpr (IsBigEndian()) {
+			v = HostToNetworkUint<uint64_t>(v);
+		}
 		offset += 8;
 		return *this;
 	}

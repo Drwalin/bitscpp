@@ -228,7 +228,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(uint16_t v, T bytes) {
 		reserve(offset+8);
 		if constexpr (!IsBigEndian()) {
-			*(uint16_t*)(ptr+offset) = v;
+			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				buffer[offset+i] = v >> (i<<3);
@@ -240,7 +240,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(uint32_t v, T bytes) {
 		reserve(offset+8);
 		if constexpr (!IsBigEndian()) {
-			*(uint32_t*)(ptr+offset) = v;
+			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				buffer[offset+i] = v >> (i<<3);
@@ -252,7 +252,7 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(uint64_t v, T bytes) {
 		reserve(offset+8);
 		if constexpr (!IsBigEndian()) {
-			*(uint64_t*)(ptr+offset) = v;
+			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
 				buffer[offset+i] = v >> (i<<3);
@@ -279,19 +279,22 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(uint8_t v)  { return op(v, (uint32_t)1); }
 	inline ByteWriter& ByteWriter::op(uint16_t v) {
 		reserve(offset+8);
-		*(uint16_t*)(ptr+offset) = HostToNetworkUint<uint16_t>(v);
+		v = HostToNetworkUint<uint16_t>(v);
+		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 2;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint32_t v) {
 		reserve(offset+8);
-		*(uint32_t*)(ptr+offset) = HostToNetworkUint<uint32_t>(v);
+		v = HostToNetworkUint<uint16_t>(v);
+		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 4;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint64_t v) {
 		reserve(offset+8);
-		*(uint64_t*)(ptr+offset) = HostToNetworkUint<uint64_t>(v);
+		v = HostToNetworkUint<uint16_t>(v);
+		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 8;
 		return *this;
 	}
