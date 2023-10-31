@@ -115,6 +115,7 @@ namespace bitscpp {
 		template<typename T>
 		inline ByteWriter& op(long long v,  T bytes);
 		
+		inline ByteWriter& op(bool v);
 		inline ByteWriter& op(uint8_t v);
 		inline ByteWriter& op(uint16_t v);
 		inline ByteWriter& op(uint32_t v);
@@ -299,6 +300,7 @@ namespace bitscpp {
 		return *this;
 	}
 	
+	inline ByteWriter& ByteWriter::op(bool v)  { return op(v?(uint8_t)1:(uint8_t)0); }
 	inline ByteWriter& ByteWriter::op(int8_t v)  { return op((uint8_t)v); }
 	inline ByteWriter& ByteWriter::op(int16_t v) { return op((uint16_t)v); }
 	inline ByteWriter& ByteWriter::op(int32_t v) { return op((uint32_t)v); }

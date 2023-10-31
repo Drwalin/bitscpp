@@ -134,6 +134,7 @@ namespace bitscpp {
 		template<typename T>
 		inline ByteReader& op(long long& v, T bytes);
 		
+		inline ByteReader& op(bool& v);
 		inline ByteReader& op(uint8_t& v);
 		inline ByteReader& op(uint16_t& v);
 		inline ByteReader& op(uint32_t& v);
@@ -371,6 +372,17 @@ namespace bitscpp {
 	
 	
 	
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(bool& v)  {
+		if(!has_bytes_to_read(1)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
+		char c = 0;
+		op(c, (uint32_t)1);
+		v = c;
+		return *this;
+	}
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t& v)  {
 		if(!has_bytes_to_read(1)) {
