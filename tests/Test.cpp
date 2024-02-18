@@ -41,9 +41,9 @@ struct Struct {
 		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str;
 	}
 	
-	long long bytes16;
-	long long bytes32;
-	long long bytes64;
+	int64_t bytes16;
+	int64_t bytes32;
+	int64_t bytes64;
 	
 	uint8_t  a8;
 	int8_t  ua8;
@@ -128,7 +128,7 @@ struct Struct {
 		s.op(b16);
 		s.op(ub16);
 		
-		s.op(is, 3);
+		s.op(is);
 		
 		s.op(b32);
 		s.op(ub32);
@@ -344,14 +344,14 @@ int main() {
 	
 	{
 		std::vector<int> vs = {13,123,12345};
-		std::vector<int> vs2 = {13,123,57};
-		COMPARE(decltype(vs), vs, vs2, s.op(v, 1));
+		std::vector<int> vs2 = {13,123,12345};
+		COMPARE(decltype(vs), vs, vs2, s.op(v));
 	}
 	
 	{
 		std::vector<std::set<int>> vs = {{13,123},{12345}};
-		std::vector<std::set<int>> vs2 = {{13,123},{57}};
-		COMPARE(decltype(vs), vs, vs2, s.op(v, 1));
+		std::vector<std::set<int>> vs2 = {{13,123},{12345}};
+		COMPARE(decltype(vs), vs, vs2, s.op(v));
 	}
 	
 	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
