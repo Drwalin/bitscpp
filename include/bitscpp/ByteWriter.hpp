@@ -32,22 +32,22 @@ namespace bitscpp {
 	
 	class ByteWriter;
 	
-	template<typename T, typename... Args>
-	inline ByteWriter& op(ByteWriter& writer, const T& data, Args... args) {
-		(*(T*)&data).__ByteStream_op(writer, args...);
+	template<typename T>
+	inline ByteWriter& op(ByteWriter& writer, const T& data) {
+		(*(T*)&data).__ByteStream_op(writer);
 		return writer;
 	}
 	
 	namespace impl {
-		template<typename T, typename... Args>
-		static inline ByteWriter& __op_ptr(ByteWriter& writer, T*const data, Args... args) {
-			op(writer, *data, args...);
+		template<typename T>
+		static inline ByteWriter& __op_ptr(ByteWriter& writer, T*const data) {
+			op(writer, *data);
 			return writer;
 		}
 		
-		template<typename T, typename... Args>
-		static inline ByteWriter& __op_ref(ByteWriter& writer, const T& data, Args... args) {
-			op(writer, data, args...);
+		template<typename T>
+		static inline ByteWriter& __op_ref(ByteWriter& writer, const T& data) {
+			op(writer, data);
 			return writer;
 		}
 	}
@@ -59,15 +59,15 @@ namespace bitscpp {
 			buffer.resize(offset);
 		}
 		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(T*const data, Args... args) {
-			impl::__op_ptr(*this, data, args...);
+		template<typename T>
+		inline ByteWriter& op(T*const data) {
+			impl::__op_ptr(*this, data);
 			return *this;
 		}
 		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(const T& data, Args... args) {
-			impl::__op_ref(*this, data, args...);
+		template<typename T>
+		inline ByteWriter& op(const T& data) {
+			impl::__op_ref(*this, data);
 			return *this;
 		}
 		
@@ -94,26 +94,12 @@ namespace bitscpp {
 		inline ByteWriter& op(const std::vector<uint8_t>& binary);
 		
 		
-		template<typename T>
-		inline ByteWriter& op(uint8_t v,  T bytes);
-		template<typename T>
-		inline ByteWriter& op(uint16_t v, T bytes);
-		template<typename T>
-		inline ByteWriter& op(uint32_t v, T bytes);
-		template<typename T>
-		inline ByteWriter& op(uint64_t v, T bytes);
-		template<typename T>
-		inline ByteWriter& op(int8_t v,   T bytes);
-		template<typename T>
-		inline ByteWriter& op(int16_t v,  T bytes);
-		template<typename T>
-		inline ByteWriter& op(int32_t v,  T bytes);
-		template<typename T>
-		inline ByteWriter& op(int64_t v,  T bytes);
-		template<typename T>
-		inline ByteWriter& op(char v,  T bytes);
-		template<typename T>
-		inline ByteWriter& op(long long v,  T bytes);
+		inline ByteWriter& op(uint16_t v, int bytes);
+		inline ByteWriter& op(uint32_t v, int bytes);
+		inline ByteWriter& op(uint64_t v, int bytes);
+		inline ByteWriter& op(int16_t v,  int bytes) { return op((uint16_t)v, bytes); }
+		inline ByteWriter& op(int32_t v,  int bytes) { return op((uint32_t)v, bytes); }
+		inline ByteWriter& op(int64_t v,  int bytes) { return op((uint64_t)v, bytes); }
 		
 		inline ByteWriter& op(bool v);
 		inline ByteWriter& op(uint8_t v);
@@ -143,19 +129,19 @@ namespace bitscpp {
 		
 	public:
 		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(const T* data, uint32_t elements, Args... args) {
+		template<typename T>
+		inline ByteWriter& op(const T* data, uint32_t elements) {
 			reserve(offset + sizeof(T)*elements + 4);
 			for(uint32_t i=0; i<elements; ++i)
-				op(data[i], args...);
+				op(data[i]);
 			return *this;
 		}
 		
-		template<typename T, typename... Args>
-		inline ByteWriter& op(const std::vector<T>& arr, Args... args) {
+		template<typename T>
+		inline ByteWriter& op(const std::vector<T>& arr) {
 			reserve(offset + sizeof(T)*arr.size()+4);
 			op((uint32_t)arr.size());
-			return op<T, Args...>(arr.data(), arr.size(), args...);
+			return op<T>(arr.data(), arr.size());
 		}
 		
 	private:
@@ -210,7 +196,7 @@ namespace bitscpp {
 	
 	inline ByteWriter& ByteWriter::op(const std::vector<uint8_t>& binary) {
 		reserve(offset + binary.size() + 4);
-		this->op((uint32_t)binary.size(), 4);
+		this->op((uint32_t)binary.size());
 		memcpy(ptr+offset, binary.data(), binary.size());
 		offset += binary.size();
 		return *this;
@@ -218,66 +204,48 @@ namespace bitscpp {
 	
 	
 	
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(uint8_t v,  T bytes) {
+	inline ByteWriter& ByteWriter::op(uint16_t v, int bytes) {
+		reserve(offset+8);
+		if constexpr (!IsBigEndian()) {
+			memcpy(ptr+offset, &v, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[offset+i] = v >> (i<<3);
+		}
+		offset += bytes;
+		return *this;
+	}
+	inline ByteWriter& ByteWriter::op(uint32_t v, int bytes) {
+		reserve(offset+8);
+		if constexpr (!IsBigEndian()) {
+			memcpy(ptr+offset, &v, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[offset+i] = v >> (i<<3);
+		}
+		offset += bytes;
+		return *this;
+	}
+	inline ByteWriter& ByteWriter::op(uint64_t v, int bytes) {
+		reserve(offset+8);
+		if constexpr (!IsBigEndian()) {
+			memcpy(ptr+offset, &v, bytes);
+		} else {
+			for(int i=0; i<bytes; ++i)
+				buffer[offset+i] = v >> (i<<3);
+		}
+		offset += bytes;
+		return *this;
+	}
+	
+	
+	
+	inline ByteWriter& ByteWriter::op(uint8_t v) {
 		reserve(offset + 16);
 		buffer[offset] = v;
 		++offset;
 		return *this;
 	}
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(uint16_t v, T bytes) {
-		reserve(offset+8);
-		if constexpr (!IsBigEndian()) {
-			memcpy(ptr+offset, &v, bytes);
-		} else {
-			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
-		}
-		offset += bytes;
-		return *this;
-	}
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(uint32_t v, T bytes) {
-		reserve(offset+8);
-		if constexpr (!IsBigEndian()) {
-			memcpy(ptr+offset, &v, bytes);
-		} else {
-			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
-		}
-		offset += bytes;
-		return *this;
-	}
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(uint64_t v, T bytes) {
-		reserve(offset+8);
-		if constexpr (!IsBigEndian()) {
-			memcpy(ptr+offset, &v, bytes);
-		} else {
-			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
-		}
-		offset += bytes;
-		return *this;
-	}
-	
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(int8_t v,   T bytes) { return op(v); }
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(int16_t v,  T bytes) { return op((uint16_t)v, bytes); }
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(int32_t v,  T bytes) { return op((uint32_t)v, bytes); }
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(int64_t v,  T bytes) { return op((uint64_t)v, bytes); }
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(char v,     T bytes) { return op((uint8_t)v, bytes); }
-	template<typename T>
-	inline ByteWriter& ByteWriter::op(long long v, T bytes) { return op((uint64_t)v, bytes); }
-	
-	
-	
-	inline ByteWriter& ByteWriter::op(uint8_t v)  { return op(v, (uint32_t)1); }
 	inline ByteWriter& ByteWriter::op(uint16_t v) {
 		reserve(offset+8);
 		v = HostToNetworkUint<uint16_t>(v);
@@ -287,14 +255,14 @@ namespace bitscpp {
 	}
 	inline ByteWriter& ByteWriter::op(uint32_t v) {
 		reserve(offset+8);
-		v = HostToNetworkUint<uint16_t>(v);
+		v = HostToNetworkUint<uint32_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 4;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint64_t v) {
 		reserve(offset+8);
-		v = HostToNetworkUint<uint16_t>(v);
+		v = HostToNetworkUint<uint64_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 8;
 		return *this;
@@ -307,6 +275,9 @@ namespace bitscpp {
 	inline ByteWriter& ByteWriter::op(int64_t v) { return op((uint64_t)v); }
 	inline ByteWriter& ByteWriter::op(char v) { return op((uint8_t)v); }
 	inline ByteWriter& ByteWriter::op(long long v) { return op((uint64_t)v); }
+	
+	
+	
 	
 	
 	
