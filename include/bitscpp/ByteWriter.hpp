@@ -73,6 +73,8 @@ namespace bitscpp {
 		
 	public:
 		
+		inline uint32_t GetSize() const { return offset; }
+		
 		inline ByteWriter(std::vector<uint8_t>& buffer) : buffer(buffer) {
 			offset = buffer.size();
 			capacity = offset + 200;
