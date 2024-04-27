@@ -19,7 +19,7 @@
 #ifndef BITSCPP_BYTE_READER_HPP
 #define BITSCPP_BYTE_READER_HPP
 
-#include <cinttypes>
+#include <cstdint>
 #include <cstring>
 
 #include <string>

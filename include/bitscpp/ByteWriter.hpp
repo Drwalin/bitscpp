@@ -19,7 +19,7 @@
 #ifndef BITSCPP_BYTE_WRITER_HPP
 #define BITSCPP_BYTE_WRITER_HPP
 
-#include <cinttypes>
+#include <cstdint>
 #include <cstring>
 
 #include <string>
@@ -55,10 +55,6 @@ namespace bitscpp {
 	class ByteWriter {
 	public:
 		
-		~ByteWriter() {
-			buffer.resize(offset);
-		}
-		
 		template<typename T>
 		inline ByteWriter& op(T*const data) {
 			impl::__op_ptr(*this, data);
@@ -73,13 +69,10 @@ namespace bitscpp {
 		
 	public:
 		
-		inline uint32_t GetSize() const { return offset; }
+		inline uint32_t GetSize() const { return _buffer.size(); }
 		
-		inline ByteWriter(std::vector<uint8_t>& buffer) : buffer(buffer) {
-			offset = buffer.size();
-			capacity = offset + 200;
-			buffer.resize(capacity);
-			ptr = buffer.data();
+		inline ByteWriter(std::vector<uint8_t>& buffer) : _buffer(buffer) {
+			ptr = _buffer.data();
 		}
 		
 		// NULL-terminated string
@@ -133,7 +126,7 @@ namespace bitscpp {
 		
 		template<typename T>
 		inline ByteWriter& op(const T* data, uint32_t elements) {
-			reserve(offset + sizeof(T)*elements + 4);
+			_reserve_expand(sizeof(T)*elements + 4);
 			for(uint32_t i=0; i<elements; ++i)
 				op(data[i]);
 			return *this;
@@ -141,25 +134,33 @@ namespace bitscpp {
 		
 		template<typename T>
 		inline ByteWriter& op(const std::vector<T>& arr) {
-			reserve(offset + sizeof(T)*arr.size()+4);
+			_reserve_expand(sizeof(T)*arr.size()+4);
 			op((uint32_t)arr.size());
 			return op<T>(arr.data(), arr.size());
 		}
 		
 	private:
 		
-		inline void reserve(uint32_t newCapacity) {
-			if(newCapacity > capacity) {
-				newCapacity = (capacity * 3) >> 1; 
-				buffer.resize(newCapacity);
-				capacity = buffer.size();
-				ptr = buffer.data();
+		inline size_t _expand(size_t bytesToExpand) {
+			size_t oldSize = _buffer.size();
+			_buffer.resize(oldSize+bytesToExpand);
+			ptr = _buffer.data();
+			return oldSize;
+		}
+		
+		inline void _reserve_expand(size_t bytesToExpand) {
+			_reserve(_buffer.size() + bytesToExpand);
+		}
+		
+		inline void _reserve(size_t newCapacity) {
+			size_t oldCapacity = _buffer.capacity();
+			if(newCapacity > oldCapacity) {
+				_buffer.reserve(newCapacity);
+				ptr = _buffer.data();
 			}
 		}
 		
-		std::vector<uint8_t>& buffer;
-		uint32_t offset;
-		uint32_t capacity;
+		std::vector<uint8_t>& _buffer;
 		uint8_t* ptr;
 	};
 	
@@ -170,7 +171,7 @@ namespace bitscpp {
 	}
 	
 	inline ByteWriter& ByteWriter::op(const std::string_view str) {
-		reserve(offset + str.size()+1);
+		size_t offset = _expand(str.size()+1);
 		memcpy(ptr+offset, str.data(), str.size());
 		ptr[offset+str.size()] = 0;
 		offset += str.size()+1;
@@ -184,7 +185,7 @@ namespace bitscpp {
 	
 	template<typename T>
 	inline ByteWriter& ByteWriter::op(uint8_t*const data, T bytes) {
-		reserve(offset + bytes);
+		size_t offset = _expand(bytes);
 		memcpy(ptr+offset, data, bytes);
 		offset +=bytes;
 		return *this;
@@ -197,8 +198,9 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(const std::vector<uint8_t>& binary) {
-		reserve(offset + binary.size() + 4);
+		_reserve_expand(binary.size() + 4);
 		this->op((uint32_t)binary.size());
+		size_t offset = _expand(binary.size());
 		memcpy(ptr+offset, binary.data(), binary.size());
 		offset += binary.size();
 		return *this;
@@ -207,34 +209,34 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(uint16_t v, int bytes) {
-		reserve(offset+8);
+		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
+				ptr[offset+i] = v >> (i<<3);
 		}
 		offset += bytes;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint32_t v, int bytes) {
-		reserve(offset+8);
+		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
+				ptr[offset+i] = v >> (i<<3);
 		}
 		offset += bytes;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint64_t v, int bytes) {
-		reserve(offset+8);
+		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				buffer[offset+i] = v >> (i<<3);
+				ptr[offset+i] = v >> (i<<3);
 		}
 		offset += bytes;
 		return *this;
@@ -243,27 +245,27 @@ namespace bitscpp {
 	
 	
 	inline ByteWriter& ByteWriter::op(uint8_t v) {
-		reserve(offset + 16);
-		buffer[offset] = v;
+		size_t offset = _expand(sizeof(v));
+		ptr[offset] = v;
 		++offset;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint16_t v) {
-		reserve(offset+8);
+		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint16_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 2;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint32_t v) {
-		reserve(offset+8);
+		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint32_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 4;
 		return *this;
 	}
 	inline ByteWriter& ByteWriter::op(uint64_t v) {
-		reserve(offset+8);
+		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint64_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 8;
