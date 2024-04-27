@@ -164,6 +164,9 @@ namespace bitscpp {
 		}
 		
 		
+		inline bool is_valid() const {
+			return errorReading_bufferToSmall == false;
+		}
 		
 		inline bool has_any_more() const {
 			return ptr != end;
