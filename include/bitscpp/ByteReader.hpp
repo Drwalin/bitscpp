@@ -90,11 +90,11 @@ namespace bitscpp {
 	public:
 		
 		inline ByteReader(const uint8_t* buffer, uint32_t offset, uint32_t size) :
-				buffer(buffer), size(size), offset(offset),
+				_buffer(buffer), _size(size), ptr(buffer+offset), end(buffer+size),
 				errorReading_bufferToSmall(false) {
 		}
 		inline ByteReader(const uint8_t* buffer, uint32_t size) :
-				buffer(buffer), size(size), offset(0),
+				_buffer(buffer), _size(size), ptr(buffer), end(buffer+size),
 				errorReading_bufferToSmall(false) {
 		}
 		
@@ -104,27 +104,19 @@ namespace bitscpp {
 		inline ByteReader& op(std::string& str);
 		inline ByteReader& op(std::string_view& str);
 		// constant size byte array
-		template<typename T>
-		inline ByteReader& op(uint8_t* data, T bytes);
-		template<typename T>
-		inline ByteReader& op(int8_t* data, T bytes);
+		inline ByteReader& op(uint8_t* data, uint32_t bytes);
+		inline ByteReader& op(int8_t* data, uint32_t bytes);
 		
 		// uint32_t size preceeds size of binary data
 		inline ByteReader& op(std::vector<uint8_t>& binary);
 		
 		
-		template<typename T>
-		inline ByteReader& op(uint16_t& v,  T bytes);
-		template<typename T>
-		inline ByteReader& op(uint32_t& v,  T bytes);
-		template<typename T>
-		inline ByteReader& op(uint64_t& v,  T bytes);
-		template<typename T>
-		inline ByteReader& op(int16_t& v,  T bytes) { return op(*(uint16_t*)&v, bytes); }
-		template<typename T>
-		inline ByteReader& op(int32_t& v,  T bytes) { return op(*(uint32_t*)&v, bytes); }
-		template<typename T>
-		inline ByteReader& op(int64_t& v,  T bytes) { return op(*(uint64_t*)&v, bytes); }
+		inline ByteReader& op(uint16_t& v, uint32_t bytes);
+		inline ByteReader& op(uint32_t& v, uint32_t bytes);
+		inline ByteReader& op(uint64_t& v, uint32_t bytes);
+		inline ByteReader& op(int16_t& v, uint32_t bytes) { return op(*(uint16_t*)&v, bytes); }
+		inline ByteReader& op(int32_t& v, uint32_t bytes) { return op(*(uint32_t*)&v, bytes); }
+		inline ByteReader& op(int64_t& v, uint32_t bytes) { return op(*(uint64_t*)&v, bytes); }
 		
 		inline ByteReader& op(bool& v);
 		inline ByteReader& op(uint8_t& v);
@@ -171,53 +163,51 @@ namespace bitscpp {
 		
 		
 		
-		inline bool is_valid() const {
-			return offset <= size;
-		}
-		
 		inline bool has_any_more() const {
-			return offset < size;
+			return ptr != end;
 		}
 		
 		inline uint32_t get_offset() const {
-			return offset;
+			return ptr-_buffer;
 		}
 		
 		inline const uint8_t* get_buffer() const {
-			return buffer;
+			return _buffer;
 		}
 		
 		inline const uint32_t get_remaining_bytes() const {
-			return size-offset;
+			return end-ptr;
 		}
 		
 	protected:
 		
 		inline bool has_bytes_to_read(uint32_t bytes) const {
 			if constexpr (__safeReading) {
-				return offset+bytes <= size;
+				return bytes <= end-ptr;
 			} else {
 				return true;
 			}
 		}
 		
-		uint8_t const* buffer;
-		uint32_t size;
-		uint32_t offset;
+		uint8_t const* _buffer;
+		uint32_t _size;
+		
+		uint8_t const* ptr;
+		uint8_t const* end;
 		
 		bool errorReading_bufferToSmall;
 	};
 	
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string_view& str) {
-		const void* ptr = memchr(buffer+offset, 0, size-offset);
+		const void* _end = memchr(ptr, 0, end-ptr);
 		if(!ptr) {
 			str = std::string_view();
 			errorReading_bufferToSmall = true;
 		} else {
-			ssize_t len = ((char*)ptr) - ((char*)buffer+offset);
-			str = std::string_view((char*)buffer+offset, len);
-			offset += str.size() + 1;
+			ssize_t len = ((char*)_end) - ((char*)ptr);
+			str = std::string_view((char*)ptr, len);
+			ptr += str.size() + 1;
 		}
 		return *this;
 	}
@@ -229,27 +219,25 @@ namespace bitscpp {
 			op(sv);
 			str = sv;
 		} else {
-			str = (char*)(buffer+offset);
-			offset += str.size()+1;
+			str = (char*)(ptr);
+			ptr += str.size()+1;
 		}
 		return *this;
 	}
 	
 	template<bool __safeReading>
-	template<typename T>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t* data, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t* data, uint32_t bytes) {
 		if(!has_bytes_to_read(bytes)) {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		memcpy(data, buffer+offset, bytes);
-		offset += bytes;
+		memcpy(data, ptr, bytes);
+		ptr += bytes;
 		return *this;
 	}
 	
 	template<bool __safeReading>
-	template<typename T>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int8_t* data, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int8_t* data, uint32_t bytes) {
 		return op((uint8_t*)data, bytes);
 	}
 	
@@ -267,62 +255,59 @@ namespace bitscpp {
 			return *this;
 		}
 		data.resize(bytes);
-		memcpy(data.data(), buffer+offset, bytes);
-		offset += bytes;
+		memcpy(data.data(), ptr, bytes);
+		ptr += bytes;
 		return *this;
 	}
 	
 	
 	
 	template<bool __safeReading>
-	template<typename T>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint16_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint16_t& v, uint32_t bytes) {
 		if(!has_bytes_to_read(bytes)) {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
 		v = 0;
 		if constexpr (!IsBigEndian()) {
-			memcpy(&v, buffer+offset, bytes);
+			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
+				v |= ((uint32_t)(ptr[i])) << (i<<3);
 		}
-		offset += bytes;
+		ptr += bytes;
 		return *this;
 	}
 	template<bool __safeReading>
-	template<typename T>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint32_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint32_t& v, uint32_t bytes) {
 		if(!has_bytes_to_read(bytes)) {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
 		v = 0;
 		if constexpr (!IsBigEndian()) {
-			memcpy(&v, buffer+offset, bytes);
+			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v |= ((uint32_t)(buffer[offset+i])) << (i<<3);
+				v |= ((uint32_t)(ptr[i])) << (i<<3);
 		}
-		offset += bytes;
+		ptr += bytes;
 		return *this;
 	}
 	template<bool __safeReading>
-	template<typename T>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint64_t& v, T bytes) {
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint64_t& v, uint32_t bytes) {
 		if(!has_bytes_to_read(bytes)) {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
 		v = 0;
 		if constexpr (!IsBigEndian()) {
-			memcpy(&v, buffer+offset, bytes);
+			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
-				v |= ((uint64_t)(buffer[offset+i])) << (i<<3);
+				v |= ((uint64_t)(ptr[i])) << (i<<3);
 		}
-		offset += bytes;
+		ptr += bytes;
 		return *this;
 	}
 	
@@ -334,8 +319,8 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		v = buffer[offset];
-		offset++;
+		v = *ptr;
+		ptr++;
 		return *this;
 	}
 	template<bool __safeReading>
@@ -344,8 +329,8 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		v = buffer[offset];
-		offset++;
+		v = *ptr;
+		ptr++;
 		return *this;
 	}
 	template<bool __safeReading>
@@ -354,11 +339,11 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		memcpy(&v, buffer+offset, sizeof(v));
+		memcpy(&v, ptr, sizeof(v));
 		if constexpr (IsBigEndian()) {
 			v = HostToNetworkUint<uint16_t>(v);
 		}
-		offset += 2;
+		ptr += 2;
 		return *this;
 	}
 	template<bool __safeReading>
@@ -367,11 +352,11 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		memcpy(&v, buffer+offset, sizeof(v));
+		memcpy(&v, ptr, sizeof(v));
 		if constexpr (IsBigEndian()) {
 			v = HostToNetworkUint<uint32_t>(v);
 		}
-		offset += 4;
+		ptr += 4;
 		return *this;
 	}
 	template<bool __safeReading>
@@ -380,11 +365,11 @@ namespace bitscpp {
 			errorReading_bufferToSmall = true;
 			return *this;
 		}
-		memcpy(&v, buffer+offset, sizeof(v));
+		memcpy(&v, ptr, sizeof(v));
 		if constexpr (IsBigEndian()) {
 			v = HostToNetworkUint<uint64_t>(v);
 		}
-		offset += 8;
+		ptr += 8;
 		return *this;
 	}
 	
