@@ -176,11 +176,8 @@ namespace bitscpp {
 		}
 		
 		inline void _reserve(size_t newCapacity) {
-			size_t oldCapacity = _buffer->capacity();
-			if(newCapacity > oldCapacity) {
-				_buffer->reserve(newCapacity);
-				ptr = _buffer->data();
-			}
+			_buffer->reserve(newCapacity);
+			ptr = _buffer->data();
 		}
 		
 		BT *_buffer;

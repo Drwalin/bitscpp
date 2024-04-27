@@ -179,14 +179,6 @@ namespace bitscpp {
 			return offset < size;
 		}
 		
-		inline bool has_bytes_to_read(uint32_t bytes) const {
-			if constexpr (__safeReading) {
-				return offset+bytes <= size;
-			} else {
-				return true;
-			}
-		}
-		
 		inline uint32_t get_offset() const {
 			return offset;
 		}
@@ -201,13 +193,20 @@ namespace bitscpp {
 		
 	protected:
 		
+		inline bool has_bytes_to_read(uint32_t bytes) const {
+			if constexpr (__safeReading) {
+				return offset+bytes <= size;
+			} else {
+				return true;
+			}
+		}
+		
 		uint8_t const* buffer;
 		uint32_t size;
 		uint32_t offset;
 		
 		bool errorReading_bufferToSmall;
 	};
-	
 	
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string_view& str) {
@@ -226,14 +225,9 @@ namespace bitscpp {
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string& str) {
 		if constexpr (__safeReading) {
-			const void* ptr = memchr(buffer+offset, 0, size-offset);
-			if(!ptr) {
-				errorReading_bufferToSmall = true;
-			} else {
-				str.clear();
-				str.insert(str.begin(), (char*)buffer+offset, (char*)ptr);
-				offset += str.size() + 1;
-			}
+			std::string_view sv;
+			op(sv);
+			str = sv;
 		} else {
 			str = (char*)(buffer+offset);
 			offset += str.size()+1;

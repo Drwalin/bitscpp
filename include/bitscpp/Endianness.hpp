@@ -19,7 +19,6 @@
 #ifndef BITSCPP_ENDIANNESS_HPP
 #define BITSCPP_ENDIANNESS_HPP
 
-#include <cinttypes>
 #include <cstdint>
 
 namespace bitscpp {
