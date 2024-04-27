@@ -52,6 +52,16 @@ namespace bitscpp {
 		}
 	}
 	
+	struct WriterBufferWrapper
+	{
+		void *buffer;
+		uint8_t *(*data)(void *buffer);
+		size_t (*size)(void *buffer);
+		void (*resize)(void *buffer, size_t newSize);
+		size_t (*capacity)(void *buffer);
+		void (*reserve)(void *buffer, size_t newCapacity);
+	};
+	
 	class ByteWriter {
 	public:
 		
@@ -69,10 +79,31 @@ namespace bitscpp {
 		
 	public:
 		
-		inline uint32_t GetSize() const { return _buffer.size(); }
+		inline uint32_t GetSize() const { return _buffer.size(_buffer.buffer); }
 		
-		inline ByteWriter(std::vector<uint8_t>& buffer) : _buffer(buffer) {
-			ptr = _buffer.data();
+		void Init(WriterBufferWrapper buffer) {
+			this->_buffer = buffer;
+			ptr = _buffer.data(_buffer.buffer);
+		}
+		
+		void Init(std::vector<uint8_t> &buffer)
+		{
+			WriterBufferWrapper wrap;
+			wrap.buffer = &buffer;
+			wrap.size = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->size();};
+			wrap.data = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->data();};
+			wrap.capacity = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->capacity();};
+			wrap.resize = [](void *ptr, size_t v) {return ((std::vector<uint8_t> *)ptr)->resize(v);};
+			wrap.reserve = [](void *ptr, size_t v) {return ((std::vector<uint8_t> *)ptr)->reserve(v);};
+			Init(wrap);
+		}
+		
+		inline ByteWriter(WriterBufferWrapper buffer) {
+			Init(buffer);
+		}
+		
+		inline ByteWriter(std::vector<uint8_t> &buffer) {
+			Init(buffer);
 		}
 		
 		// NULL-terminated string
@@ -142,25 +173,25 @@ namespace bitscpp {
 	private:
 		
 		inline size_t _expand(size_t bytesToExpand) {
-			size_t oldSize = _buffer.size();
-			_buffer.resize(oldSize+bytesToExpand);
-			ptr = _buffer.data();
+			size_t oldSize = _buffer.size(_buffer.buffer);
+			_buffer.resize(_buffer.buffer, oldSize+bytesToExpand);
+			ptr = _buffer.data(_buffer.buffer);
 			return oldSize;
 		}
 		
 		inline void _reserve_expand(size_t bytesToExpand) {
-			_reserve(_buffer.size() + bytesToExpand);
+			_reserve(_buffer.size(_buffer.buffer) + bytesToExpand);
 		}
 		
 		inline void _reserve(size_t newCapacity) {
-			size_t oldCapacity = _buffer.capacity();
+			size_t oldCapacity = _buffer.capacity(_buffer.buffer);
 			if(newCapacity > oldCapacity) {
-				_buffer.reserve(newCapacity);
-				ptr = _buffer.data();
+				_buffer.reserve(_buffer.buffer, newCapacity);
+				ptr = _buffer.data(_buffer.buffer);
 			}
 		}
 		
-		std::vector<uint8_t>& _buffer;
+		WriterBufferWrapper _buffer;
 		uint8_t* ptr;
 	};
 	
