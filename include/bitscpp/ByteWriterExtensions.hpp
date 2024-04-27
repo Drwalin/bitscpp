@@ -25,16 +25,16 @@
 #include "ByteWriter.hpp"
 
 namespace bitscpp {
-	template<typename T>
-	inline ByteWriter& op(ByteWriter& s, const std::set<T>& set) {
+	template<typename BT, typename T>
+	inline ByteWriter<BT>& op(ByteWriter<BT>& s, const std::set<T>& set) {
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);
 		return s;
 	}
 	
-	template<typename T>
-	inline ByteWriter& op(ByteWriter& s, const std::unordered_set<T>& set) {
+	template<typename BT, typename T>
+	inline ByteWriter<BT>& op(ByteWriter<BT>& s, const std::unordered_set<T>& set) {
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);

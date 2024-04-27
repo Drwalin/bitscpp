@@ -30,38 +30,42 @@
 
 namespace bitscpp {
 	
+	template<typename BT>
 	class ByteWriter;
 	
-	template<typename T>
-	inline ByteWriter& op(ByteWriter& writer, const T& data) {
+	template<typename BT, typename T>
+	inline ByteWriter<BT>& op(ByteWriter<BT>& writer, const T& data) {
 		(*(T*)&data).__ByteStream_op(writer);
 		return writer;
 	}
 	
 	namespace impl {
-		template<typename T>
-		static inline ByteWriter& __op_ptr(ByteWriter& writer, T*const data) {
+		template<typename BT, typename T>
+		static inline ByteWriter<BT>& __op_ptr(ByteWriter<BT>& writer, T*const data) {
 			op(writer, *data);
 			return writer;
 		}
 		
-		template<typename T>
-		static inline ByteWriter& __op_ref(ByteWriter& writer, const T& data) {
+		template<typename BT, typename T>
+		static inline ByteWriter<BT>& __op_ref(ByteWriter<BT>& writer, const T& data) {
 			op(writer, data);
 			return writer;
 		}
 	}
 	
-	struct WriterBufferWrapper
-	{
-		void *buffer;
-		uint8_t *(*data)(void *buffer);
-		size_t (*size)(void *buffer);
-		void (*resize)(void *buffer, size_t newSize);
-		size_t (*capacity)(void *buffer);
-		void (*reserve)(void *buffer, size_t newCapacity);
-	};
-	
+	/*
+	 * BT requires following signature:
+	 * class BT {
+	 *   uint8_t *data();
+	 *   size_t (*size)();
+	 *   void (*resize)(size_t newSize);
+	 *   size_t (*capacity)();
+	 *   void (*reserve)(size_t newCapacity);
+	 * };
+	 * 
+	 * behavior should be similar to std::vector<uint8_t>
+	 */
+	template<typename BT = std::vector<uint8_t>>
 	class ByteWriter {
 	public:
 		
@@ -79,30 +83,18 @@ namespace bitscpp {
 		
 	public:
 		
-		inline uint32_t GetSize() const { return _buffer.size(_buffer.buffer); }
+		inline uint32_t GetSize() const { return _buffer->size(); }
 		
-		void Init(WriterBufferWrapper buffer) {
+		void Init(BT *buffer) {
 			this->_buffer = buffer;
-			ptr = _buffer.data(_buffer.buffer);
+			ptr = _buffer->data();
 		}
 		
-		void Init(std::vector<uint8_t> &buffer)
-		{
-			WriterBufferWrapper wrap;
-			wrap.buffer = &buffer;
-			wrap.size = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->size();};
-			wrap.data = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->data();};
-			wrap.capacity = [](void *ptr) {return ((std::vector<uint8_t> *)ptr)->capacity();};
-			wrap.resize = [](void *ptr, size_t v) {return ((std::vector<uint8_t> *)ptr)->resize(v);};
-			wrap.reserve = [](void *ptr, size_t v) {return ((std::vector<uint8_t> *)ptr)->reserve(v);};
-			Init(wrap);
+		inline ByteWriter(BT &buffer) {
+			Init(&buffer);
 		}
 		
-		inline ByteWriter(WriterBufferWrapper buffer) {
-			Init(buffer);
-		}
-		
-		inline ByteWriter(std::vector<uint8_t> &buffer) {
+		inline ByteWriter(BT *buffer) {
 			Init(buffer);
 		}
 		
@@ -173,35 +165,37 @@ namespace bitscpp {
 	private:
 		
 		inline size_t _expand(size_t bytesToExpand) {
-			size_t oldSize = _buffer.size(_buffer.buffer);
-			_buffer.resize(_buffer.buffer, oldSize+bytesToExpand);
-			ptr = _buffer.data(_buffer.buffer);
+			size_t oldSize = _buffer->size();
+			_buffer->resize(oldSize+bytesToExpand);
+			ptr = _buffer->data();
 			return oldSize;
 		}
 		
 		inline void _reserve_expand(size_t bytesToExpand) {
-			_reserve(_buffer.size(_buffer.buffer) + bytesToExpand);
+			_reserve(_buffer->size() + bytesToExpand);
 		}
 		
 		inline void _reserve(size_t newCapacity) {
-			size_t oldCapacity = _buffer.capacity(_buffer.buffer);
+			size_t oldCapacity = _buffer->capacity();
 			if(newCapacity > oldCapacity) {
-				_buffer.reserve(_buffer.buffer, newCapacity);
-				ptr = _buffer.data(_buffer.buffer);
+				_buffer->reserve(newCapacity);
+				ptr = _buffer->data();
 			}
 		}
 		
-		WriterBufferWrapper _buffer;
+		BT *_buffer;
 		uint8_t* ptr;
 	};
 	
 	
 	
-	inline ByteWriter& ByteWriter::op(const std::string& str) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(const std::string& str) {
 		return op((int8_t*const)str.data(), str.size()+1);
 	}
 	
-	inline ByteWriter& ByteWriter::op(const std::string_view str) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(const std::string_view str) {
 		size_t offset = _expand(str.size()+1);
 		memcpy(ptr+offset, str.data(), str.size());
 		ptr[offset+str.size()] = 0;
@@ -209,26 +203,30 @@ namespace bitscpp {
 		return *this;
 	}
 	
-	inline ByteWriter& ByteWriter::op(const char* str) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(const char* str) {
 		ssize_t len = strlen(str);
 		return op(std::string_view(str, len));
 	}
 	
+	template<typename BT>
 	template<typename T>
-	inline ByteWriter& ByteWriter::op(uint8_t*const data, T bytes) {
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint8_t*const data, T bytes) {
 		size_t offset = _expand(bytes);
 		memcpy(ptr+offset, data, bytes);
 		offset +=bytes;
 		return *this;
 	}
 	
+	template<typename BT>
 	template<typename T>
-	inline ByteWriter& ByteWriter::op(int8_t*const data, T bytes) {
+	inline ByteWriter<BT>& ByteWriter<BT>::op(int8_t*const data, T bytes) {
 		return op((uint8_t*const)data, bytes);
 	}
 	
 	
-	inline ByteWriter& ByteWriter::op(const std::vector<uint8_t>& binary) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(const std::vector<uint8_t>& binary) {
 		_reserve_expand(binary.size() + 4);
 		this->op((uint32_t)binary.size());
 		size_t offset = _expand(binary.size());
@@ -239,7 +237,8 @@ namespace bitscpp {
 	
 	
 	
-	inline ByteWriter& ByteWriter::op(uint16_t v, int bytes) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint16_t v, int bytes) {
 		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
@@ -250,7 +249,8 @@ namespace bitscpp {
 		offset += bytes;
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint32_t v, int bytes) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint32_t v, int bytes) {
 		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
@@ -261,7 +261,8 @@ namespace bitscpp {
 		offset += bytes;
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint64_t v, int bytes) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint64_t v, int bytes) {
 		size_t offset = _expand(bytes);
 		if constexpr (!IsBigEndian()) {
 			memcpy(ptr+offset, &v, bytes);
@@ -275,27 +276,31 @@ namespace bitscpp {
 	
 	
 	
-	inline ByteWriter& ByteWriter::op(uint8_t v) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint8_t v) {
 		size_t offset = _expand(sizeof(v));
 		ptr[offset] = v;
 		++offset;
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint16_t v) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint16_t v) {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint16_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 2;
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint32_t v) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint32_t v) {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint32_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		offset += 4;
 		return *this;
 	}
-	inline ByteWriter& ByteWriter::op(uint64_t v) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(uint64_t v) {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint64_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
@@ -303,30 +308,40 @@ namespace bitscpp {
 		return *this;
 	}
 	
-	inline ByteWriter& ByteWriter::op(bool v)  { return op(v?(uint8_t)1:(uint8_t)0); }
-	inline ByteWriter& ByteWriter::op(int8_t v)  { return op((uint8_t)v); }
-	inline ByteWriter& ByteWriter::op(int16_t v) { return op((uint16_t)v); }
-	inline ByteWriter& ByteWriter::op(int32_t v) { return op((uint32_t)v); }
-	inline ByteWriter& ByteWriter::op(int64_t v) { return op((uint64_t)v); }
-	inline ByteWriter& ByteWriter::op(char v) { return op((uint8_t)v); }
-	inline ByteWriter& ByteWriter::op(long long v) { return op((uint64_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(bool v)  { return op(v?(uint8_t)1:(uint8_t)0); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(int8_t v)  { return op((uint8_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(int16_t v) { return op((uint16_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(int32_t v) { return op((uint32_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(int64_t v) { return op((uint64_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(char v) { return op((uint8_t)v); }
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(long long v) { return op((uint64_t)v); }
 	
 	
 	
 	
 	
 	
-	inline ByteWriter& ByteWriter::op(float value) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(float value) {
 		return op(*(uint32_t*)&value);
 	}
 	
-	inline ByteWriter& ByteWriter::op(double value) {
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(double value) {
 		return op(*(uint64_t*)&value);
 	}
 	
 		
+	template<typename BT>
 	template<typename Tmin, typename Tmax, typename T>
-	inline ByteWriter& ByteWriter::op(float value, Tmin min, Tmax max,
+	inline ByteWriter<BT>& ByteWriter<BT>::op(float value, Tmin min, Tmax max,
 			T bytes) {
 		float fmask = (((uint32_t)1)<<(bytes<<3))-1;
 		float pv = (value-min) * (fmask / (max-min));
@@ -334,8 +349,9 @@ namespace bitscpp {
 		return op(v, bytes);
 	}
 	
+	template<typename BT>
 	template<typename Tmin, typename Tmax, typename T>
-	inline ByteWriter& ByteWriter::op(double value, Tmin min, Tmax max,
+	inline ByteWriter<BT>& ByteWriter<BT>::op(double value, Tmin min, Tmax max,
 			T bytes) {
 		double fmask = (((uint64_t)1)<<(bytes<<3))-1ll;
 		double pv = (value-min) * (fmask / (max-min));
@@ -343,14 +359,16 @@ namespace bitscpp {
 		return op(v, bytes);
 	}
 	
+	template<typename BT>
 	template<typename Torig, typename Tmin, typename Tmax, typename T>
-	inline ByteWriter& ByteWriter::op(float value, Torig origin, Tmin min,
+	inline ByteWriter<BT>& ByteWriter<BT>::op(float value, Torig origin, Tmin min,
 			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
 	
+	template<typename BT>
 	template<typename Torig, typename Tmin, typename Tmax, typename T>
-	inline ByteWriter& ByteWriter::op(double value, Torig origin, Tmin min,
+	inline ByteWriter<BT>& ByteWriter<BT>::op(double value, Torig origin, Tmin min,
 			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
