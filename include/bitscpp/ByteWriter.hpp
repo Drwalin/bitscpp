@@ -102,6 +102,10 @@ namespace bitscpp {
 		inline ByteWriter& op(const std::string& str);
 		inline ByteWriter& op(const std::string_view str);
 		inline ByteWriter& op(const char* str);
+		inline ByteWriter& op_string(const char* str, uint32_t size);
+		inline ByteWriter& op_string_sized(const char* str, uint32_t size, uint32_t bytesOfSize);
+		inline ByteWriter& op_string_sized(const std::string_view str, uint32_t bytesOfSize);
+		inline ByteWriter& op_string_sized(const std::string &str, uint32_t bytesOfSize);
 		// constant size byte array
 		template<typename T>
 		inline ByteWriter& op(uint8_t* const data, T bytes);
@@ -182,36 +186,63 @@ namespace bitscpp {
 		
 		BT *_buffer;
 		uint8_t* ptr;
+		
+	public:
+		bool hasError = false;
 	};
 	
 	
 	
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(const std::string& str) {
-		return op((int8_t*const)str.data(), str.size()+1);
+		return op_string(str.data(), str.size());
 	}
 	
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(const std::string_view str) {
-		size_t offset = _expand(str.size()+1);
-		memcpy(ptr+offset, str.data(), str.size());
-		ptr[offset+str.size()] = 0;
-		offset += str.size()+1;
+		return op_string(str.data(), str.size());
+	}
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string(const char* str, uint32_t size) {
+		uint32_t offset = _expand(size+1);
+		memcpy(ptr+offset, str, size);
+		ptr[offset+size] = 0;
 		return *this;
+	}
+	
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(const char* str, uint32_t size, uint32_t bytesOfSize) {
+		size_t offset = _expand(size+bytesOfSize);
+		uint32_t v = HostToNetworkUint<uint32_t>(size);
+		memcpy(ptr+offset+bytesOfSize, str, size);
+		memcpy(ptr+offset, &v, bytesOfSize);
+		return *this;
+	}
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(const std::string_view str, uint32_t bytesOfSize) {
+		return op_string_sized(str.data(), str.size(), bytesOfSize);
+	}
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(const std::string &str, uint32_t bytesOfSize) {
+		return op_string_sized(str.data(), str.size(), bytesOfSize);
 	}
 	
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(const char* str) {
 		ssize_t len = strlen(str);
-		return op(std::string_view(str, len));
+		return op_string(str, len);
 	}
+	
 	
 	template<typename BT>
 	template<typename T>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint8_t*const data, T bytes) {
 		size_t offset = _expand(bytes);
 		memcpy(ptr+offset, data, bytes);
-		offset +=bytes;
 		return *this;
 	}
 	
@@ -228,7 +259,6 @@ namespace bitscpp {
 		this->op((uint32_t)binary.size());
 		size_t offset = _expand(binary.size());
 		memcpy(ptr+offset, binary.data(), binary.size());
-		offset += binary.size();
 		return *this;
 	}
 	
@@ -243,7 +273,6 @@ namespace bitscpp {
 			for(int i=0; i<bytes; ++i)
 				ptr[offset+i] = v >> (i<<3);
 		}
-		offset += bytes;
 		return *this;
 	}
 	template<typename BT>
@@ -255,7 +284,6 @@ namespace bitscpp {
 			for(int i=0; i<bytes; ++i)
 				ptr[offset+i] = v >> (i<<3);
 		}
-		offset += bytes;
 		return *this;
 	}
 	template<typename BT>
@@ -267,7 +295,6 @@ namespace bitscpp {
 			for(int i=0; i<bytes; ++i)
 				ptr[offset+i] = v >> (i<<3);
 		}
-		offset += bytes;
 		return *this;
 	}
 	
@@ -285,7 +312,6 @@ namespace bitscpp {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint16_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
-		offset += 2;
 		return *this;
 	}
 	template<typename BT>
@@ -293,7 +319,6 @@ namespace bitscpp {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint32_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
-		offset += 4;
 		return *this;
 	}
 	template<typename BT>
@@ -301,7 +326,6 @@ namespace bitscpp {
 		size_t offset = _expand(sizeof(v));
 		v = HostToNetworkUint<uint64_t>(v);
 		memcpy(ptr+offset, &v, sizeof(v));
-		offset += 8;
 		return *this;
 	}
 	

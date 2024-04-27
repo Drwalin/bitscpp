@@ -38,7 +38,7 @@ struct Struct {
 	}
 	
 	bool operator==(const Struct& other) {
-		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str;
+		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str && str2 == other.str2 && is == other.is;
 	}
 	
 	int64_t bytes16;
@@ -69,6 +69,7 @@ struct Struct {
 	float f1;
 	
 	std::string str;
+	std::string str2;
 	std::vector<int> is;
 	
 	void cmp(Struct& s) {
@@ -100,8 +101,9 @@ struct Struct {
 		std::cout << " floats\n";
 		std::cout << f2 		<< "    " << s.f2 << "\n";
 		std::cout << f1 		<< "    " << s.f1 << "\n";
-		std::cout << " string\n";
-		std::cout << "'"<<str << "'    '" << s.str << "'\n";
+		std::cout << " strings\n";
+		std::cout << "'"<<str  << "'    '" << s.str  << "'\n";
+		std::cout << "'"<<str2 << "'    '" << s.str2 << "'\n";
 		std::cout << " vector<int>\n";
 		std::cout << "'"<<is << "'    '" << s.is << "'\n";
 	}
@@ -122,6 +124,7 @@ struct Struct {
 		s.op(ua64, bytes64);
 		
 		s.op(str);
+		s.op_string_sized(str2, 4);
 		
 		s.op(b8);
 		s.op(ub8);
@@ -143,9 +146,11 @@ struct Struct {
 	
 	void clear() {
 		str.~basic_string();
+		str2.~basic_string();
 		is.~vector();
 		memset(this, 0, sizeof(*this));
 		new (&str) std::string;
+		new (&str2) std::string;
 		new (&is) std::vector<int>;
 	}
 };
@@ -175,6 +180,7 @@ void Random(Struct& s) {
 	s.clear();
 	
 	s.str = "ala ma hfdjsak lfdhsjk fljhasd fljadskl fdha klfdasjf l";
+	s.str2 = "ala ma hfdjsak lfdhsjk fljhasd fljadskl fdha klfdasjf l";
 // 	s.str += std::to_string(++I);
 	static int issize = -1;
 	s.is.resize(++issize);

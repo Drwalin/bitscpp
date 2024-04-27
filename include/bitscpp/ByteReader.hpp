@@ -103,6 +103,8 @@ namespace bitscpp {
 		// NULL-terminated string
 		inline ByteReader& op(std::string& str);
 		inline ByteReader& op(std::string_view& str);
+		inline ByteReader& op_string_sized(std::string_view& str, uint32_t bytesOfSize);
+		inline ByteReader& op_string_sized(std::string& str, uint32_t bytesOfSize);
 		// constant size byte array
 		inline ByteReader& op(uint8_t* data, uint32_t bytes);
 		inline ByteReader& op(int8_t* data, uint32_t bytes);
@@ -214,16 +216,35 @@ namespace bitscpp {
 	
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string& str) {
-		if constexpr (__safeReading) {
-			std::string_view sv;
-			op(sv);
-			str = sv;
-		} else {
-			str = (char*)(ptr);
-			ptr += str.size()+1;
-		}
+		std::string_view sv;
+		op(sv);
+		str = sv;
 		return *this;
 	}
+	
+	
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op_string_sized(std::string_view& str, uint32_t bytesOfSize) {
+		uint32_t size;
+		op(size, bytesOfSize);
+		if(!has_bytes_to_read(size)) {
+			errorReading_bufferToSmall = true;
+			return *this;
+		}
+		str = std::string_view((char*)ptr, size);
+		ptr += size;
+		return *this;
+	}
+	
+	template<bool __safeReading>
+	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op_string_sized(std::string& str, uint32_t bytesOfSize) {
+		std::string_view sv;
+		op_string_sized(sv, bytesOfSize);
+		str = sv;
+		return *this;
+	}
+	
+	
 	
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(uint8_t* data, uint32_t bytes) {
@@ -340,9 +361,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		if constexpr (IsBigEndian()) {
-			v = HostToNetworkUint<uint16_t>(v);
-		}
+		v = HostToNetworkUint<uint16_t>(v);
 		ptr += 2;
 		return *this;
 	}
@@ -353,9 +372,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		if constexpr (IsBigEndian()) {
-			v = HostToNetworkUint<uint32_t>(v);
-		}
+		v = HostToNetworkUint<uint32_t>(v);
 		ptr += 4;
 		return *this;
 	}
@@ -366,9 +383,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		if constexpr (IsBigEndian()) {
-			v = HostToNetworkUint<uint64_t>(v);
-		}
+		v = HostToNetworkUint<uint64_t>(v);
 		ptr += 8;
 		return *this;
 	}
