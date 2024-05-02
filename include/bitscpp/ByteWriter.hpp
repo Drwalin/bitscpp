@@ -88,6 +88,7 @@ namespace bitscpp {
 		void Init(BT *buffer) {
 			this->_buffer = buffer;
 			ptr = _buffer->data();
+			_reserve(100);
 		}
 		
 		inline ByteWriter(BT &buffer) {
@@ -180,7 +181,7 @@ namespace bitscpp {
 		}
 		
 		inline void _reserve(size_t newCapacity) {
-			_buffer->reserve(newCapacity);
+			_buffer->reserve((newCapacity*3)/2 + 16);
 			ptr = _buffer->data();
 		}
 		
