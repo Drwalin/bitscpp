@@ -57,10 +57,10 @@ namespace bitscpp {
 	 * BT requires following signature:
 	 * class BT {
 	 *   uint8_t *data();
-	 *   size_t (*size)();
-	 *   void (*resize)(size_t newSize);
-	 *   size_t (*capacity)();
-	 *   void (*reserve)(size_t newCapacity);
+	 *   size_t size();
+	 *   void resize(size_t newSize);
+	 *   size_t capacity();
+	 *   void reserve(size_t newCapacity);
 	 * };
 	 * 
 	 * behavior should be similar to std::vector<uint8_t>
@@ -88,8 +88,9 @@ namespace bitscpp {
 		void Init(BT *buffer) {
 			this->_buffer = buffer;
 			ptr = _buffer->data();
-			_reserve(100);
 		}
+		
+		inline ByteWriter() : _buffer(nullptr), ptr(nullptr) {}
 		
 		inline ByteWriter(BT &buffer) {
 			Init(&buffer);
