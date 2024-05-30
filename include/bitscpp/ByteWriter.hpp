@@ -135,7 +135,6 @@ namespace bitscpp {
 		inline ByteWriter& op(int32_t v);
 		inline ByteWriter& op(int64_t v);
 		inline ByteWriter& op(char v);
-		inline ByteWriter& op(long long v);
 		
 		
 		inline ByteWriter& op(float value);
@@ -343,8 +342,6 @@ namespace bitscpp {
 	inline ByteWriter<BT>& ByteWriter<BT>::op(int64_t v) { return op((uint64_t)v); }
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(char v) { return op((uint8_t)v); }
-	template<typename BT>
-	inline ByteWriter<BT>& ByteWriter<BT>::op(long long v) { return op((uint64_t)v); }
 	
 	
 	

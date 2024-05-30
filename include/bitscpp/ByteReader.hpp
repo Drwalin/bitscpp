@@ -130,7 +130,6 @@ namespace bitscpp {
 		inline ByteReader& op(int32_t& v);
 		inline ByteReader& op(int64_t& v);
 		inline ByteReader& op(char& v);
-		inline ByteReader& op(long long& v);
 		
 		
 		inline ByteReader& op(float& v);
@@ -401,8 +400,6 @@ namespace bitscpp {
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(int64_t& v) { return op((uint64_t&)v); }
 	template<bool __safeReading>
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(char& v) { return op((uint8_t&)v); }
-	template<bool __safeReading>
-	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(long long& v) { return op((uint64_t&)v); }
 	
 	
 	
