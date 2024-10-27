@@ -106,6 +106,9 @@ namespace bitscpp {
 		inline ByteWriter& op(const char* str);
 		inline ByteWriter& op_string(const char* str, uint32_t size);
 		inline ByteWriter& op_string_sized(const char* str, uint32_t size, uint32_t bytesOfSize);
+		inline ByteWriter& op(char* str);
+		inline ByteWriter& op_string(char* str, uint32_t size);
+		inline ByteWriter& op_string_sized(char* str, uint32_t size, uint32_t bytesOfSize);
 		inline ByteWriter& op_string_sized(const std::string_view str, uint32_t bytesOfSize);
 		inline ByteWriter& op_string_sized(const std::string &str, uint32_t bytesOfSize);
 		// constant size byte array
@@ -205,7 +208,7 @@ namespace bitscpp {
 	}
 	
 	template<typename BT>
-	inline ByteWriter<BT>& ByteWriter<BT>::op_string(const char* str, uint32_t size) {
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string(char* str, uint32_t size) {
 		uint32_t offset = _expand(size+1);
 		memcpy(ptr+offset, str, size);
 		ptr[offset+size] = 0;
@@ -214,12 +217,23 @@ namespace bitscpp {
 	
 	
 	template<typename BT>
-	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(const char* str, uint32_t size, uint32_t bytesOfSize) {
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(char* str, uint32_t size, uint32_t bytesOfSize) {
 		size_t offset = _expand(size+bytesOfSize);
 		uint32_t v = HostToNetworkUint<uint32_t>(size);
 		memcpy(ptr+offset+bytesOfSize, str, size);
 		memcpy(ptr+offset, &v, bytesOfSize);
 		return *this;
+	}
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string(const char* str, uint32_t size) {
+		return op_string((char*)str, size);
+	}
+	
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(const char* str, uint32_t size, uint32_t bytesOfSize) {
+		return op_string_sized((char*)str, size, bytesOfSize);
 	}
 	
 	template<typename BT>
@@ -233,9 +247,14 @@ namespace bitscpp {
 	}
 	
 	template<typename BT>
-	inline ByteWriter<BT>& ByteWriter<BT>::op(const char* str) {
+	inline ByteWriter<BT>& ByteWriter<BT>::op(char* str) {
 		ssize_t len = strlen(str);
 		return op_string(str, len);
+	}
+	
+	template<typename BT>
+	inline ByteWriter<BT>& ByteWriter<BT>::op(const char* str) {
+		return op((char*) str);
 	}
 	
 	
