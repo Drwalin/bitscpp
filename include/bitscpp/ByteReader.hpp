@@ -220,7 +220,15 @@ namespace bitscpp {
 	inline ByteReader<__safeReading>& ByteReader<__safeReading>::op(std::string& str) {
 		std::string_view sv;
 		op(sv);
-		str = sv;
+		if (errorReading_bufferToSmall) {
+			str.clear();
+			return *this;
+		}
+		if (sv.size() == 0 || sv.size() > 0xFFFFFFFFllu) {
+			str.clear();
+			return *this;
+		}
+		str = std::string(sv.data(), sv.size());
 		return *this;
 	}
 	
