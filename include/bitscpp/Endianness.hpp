@@ -1,20 +1,7 @@
-/*
- *  This file is part of bitscpp.
- *  Copyright (C) 2023 Marek Zalewski aka Drwalin
- *
- *  bitscpp is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  bitscpp is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+// Copyright (C) 2023-2025 Marek Zalewski aka Drwalin
+// 
+// This file is part of bitscpp project under MIT License
+// You should have received a copy of the MIT License along with this program.
 
 #ifndef BITSCPP_ENDIANNESS_HPP
 #define BITSCPP_ENDIANNESS_HPP
