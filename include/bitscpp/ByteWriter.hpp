@@ -41,7 +41,7 @@ namespace bitscpp {
 	}
 	
 	/*
-	 * BT requires following signature:
+	 * BT requires following interface:
 	 * class BT {
 	 *   uint8_t *data();
 	 *   size_t size();
