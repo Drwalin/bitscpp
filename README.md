@@ -1,9 +1,25 @@
 
 # bitscpp
 
-This program is under MIT License. Please see LICENSE file.
+This project is under MIT License. Please see LICENSE file.
 
 Requires C++17 to compile.
+
+Library provides serialization and deserialization to binary buffers/arrays.
+Able to use with `std::vector<uint8_t>` or other classes/structures
+with following interface as a serialization buffer:
+
+```C++
+class Buffer {
+    uint8_t *data();
+    size_t size();
+    void resize(size_t newSize);
+    size_t capacity();
+    void reserve(size_t newCapacity);
+};
+```
+
+Deserialization is made from plain C byte array.
 
 
 ## Benchmark rsults
