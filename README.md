@@ -3,7 +3,7 @@
 
 This project is under MIT License. Please see LICENSE file.
 
-Requires C++17 to compile.
+Requires C++23 to compile.
 
 Library provides serialization and deserialization to binary buffers/arrays.
 Able to use with `std::vector<uint8_t>` or other classes/structures

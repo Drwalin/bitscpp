@@ -8,47 +8,46 @@
 
 #include <cstdint>
 
-namespace bitscpp {
+#include <bit>
 
-	// https://stackoverflow.com/questions/1583791/constexpr-and-endianness
-	// answer by Piotr Siupa
+namespace bitscpp {
 	class Endian
 	{
-	private:
-		static constexpr uint32_t uint32_ = 0x01020304;
-		static constexpr uint8_t magic_ = (const uint8_t&)uint32_;
 	public:
-		static constexpr bool little = magic_ == 0x04;
-		static constexpr bool big = magic_ == 0x01;
+		static constexpr bool little = std::endian::native == std::endian::little;
+		static constexpr bool big = std::endian::native == std::endian::big;
 		static_assert(little || big, "Cannot determine endianness!");
+		static constexpr bool IsLittle() { return little; }
+		static constexpr bool IsBig() { return big; }
 	private:
 		Endian() = delete;
 	};
 	
-	constexpr bool IsBigEndian() {
-		return Endian::big;
+	inline uint8_t HostToNetworkUint(uint8_t v) {
+		return v;
 	}
 	
-	template<typename T>
-	inline T HostToNetworkUint(T v) {
-		if constexpr (!IsBigEndian()) {
+	inline uint16_t HostToNetworkUint(uint16_t v) {
+		if constexpr (Endian::little) {
 			return v;
 		} else {
-			if constexpr (sizeof(T) == 1) {
-				return v;
-			} else if constexpr (sizeof(T) == 2) {
-				return (v>>8) | (v<<8);
-			} else if constexpr (sizeof(T) == 4) {
-				uint16_t a, b;
-				a = v;
-				b = v>>16;
-				return (((T)HostToNetworkUint(a))<<16) | (T)HostToNetworkUint(b);
-			} else if constexpr (sizeof(T) == 8) {
-				uint32_t a, b;
-				a = v;
-				b = v>>32;
-				return (((T)HostToNetworkUint(a))<<32) | (T)HostToNetworkUint(b);
-			}
+			return std::byteswap<uint16_t>(v);
+		}
+	}
+	
+	inline uint32_t HostToNetworkUint(uint32_t v) {
+		if constexpr (Endian::little) {
+			return v;
+		} else {
+			return std::byteswap<uint32_t>(v);
+		}
+	}
+	
+	inline uint64_t HostToNetworkUint(uint64_t v) {
+		if constexpr (Endian::little) {
+			return v;
+		} else {
+			return std::byteswap<uint64_t>(v);
 		}
 	}
 }

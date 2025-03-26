@@ -287,7 +287,7 @@ namespace bitscpp {
 			return *this;
 		}
 		v = 0;
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -303,7 +303,7 @@ namespace bitscpp {
 			return *this;
 		}
 		v = 0;
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -319,7 +319,7 @@ namespace bitscpp {
 			return *this;
 		}
 		v = 0;
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(&v, ptr, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -358,7 +358,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		v = HostToNetworkUint<uint16_t>(v);
+		v = HostToNetworkUint(v);
 		ptr += 2;
 		return *this;
 	}
@@ -369,7 +369,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		v = HostToNetworkUint<uint32_t>(v);
+		v = HostToNetworkUint(v);
 		ptr += 4;
 		return *this;
 	}
@@ -380,7 +380,7 @@ namespace bitscpp {
 			return *this;
 		}
 		memcpy(&v, ptr, sizeof(v));
-		v = HostToNetworkUint<uint64_t>(v);
+		v = HostToNetworkUint(v);
 		ptr += 8;
 		return *this;
 	}
