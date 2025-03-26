@@ -206,7 +206,7 @@ namespace bitscpp {
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op_string_sized(char* str, uint32_t size, uint32_t bytesOfSize) {
 		size_t offset = _expand(size+bytesOfSize);
-		uint32_t v = HostToNetworkUint<uint32_t>(size);
+		uint32_t v = HostToNetworkUint(size);
 		memcpy(ptr+offset+bytesOfSize, str, size);
 		memcpy(ptr+offset, &v, bytesOfSize);
 		return *this;
@@ -274,7 +274,7 @@ namespace bitscpp {
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint16_t v, int bytes) {
 		size_t offset = _expand(bytes);
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -285,7 +285,7 @@ namespace bitscpp {
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint32_t v, int bytes) {
 		size_t offset = _expand(bytes);
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -296,7 +296,7 @@ namespace bitscpp {
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint64_t v, int bytes) {
 		size_t offset = _expand(bytes);
-		if constexpr (!IsBigEndian()) {
+		if constexpr (Endian::IsLittle()) {
 			memcpy(ptr+offset, &v, bytes);
 		} else {
 			for(int i=0; i<bytes; ++i)
@@ -317,21 +317,21 @@ namespace bitscpp {
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint16_t v) {
 		size_t offset = _expand(sizeof(v));
-		v = HostToNetworkUint<uint16_t>(v);
+		v = HostToNetworkUint(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		return *this;
 	}
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint32_t v) {
 		size_t offset = _expand(sizeof(v));
-		v = HostToNetworkUint<uint32_t>(v);
+		v = HostToNetworkUint(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		return *this;
 	}
 	template<typename BT>
 	inline ByteWriter<BT>& ByteWriter<BT>::op(uint64_t v) {
 		size_t offset = _expand(sizeof(v));
-		v = HostToNetworkUint<uint64_t>(v);
+		v = HostToNetworkUint(v);
 		memcpy(ptr+offset, &v, sizeof(v));
 		return *this;
 	}

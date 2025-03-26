@@ -37,7 +37,7 @@ struct Struct {
 		return *this;
 	}
 	
-	bool operator==(const Struct& other) {
+	bool operator==(const Struct& other) const {
 		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str && str2 == other.str2 && is == other.is;
 	}
 	
