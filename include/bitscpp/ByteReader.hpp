@@ -166,7 +166,7 @@ namespace bitscpp {
 			return _buffer;
 		}
 		
-		inline const uint32_t get_remaining_bytes() const {
+		inline uint32_t get_remaining_bytes() const {
 			return end-ptr;
 		}
 		
