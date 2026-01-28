@@ -43,17 +43,17 @@ Uses all values from 00000000b to 11000111b
 | 1010XXXX | -> integer XXXX in range <-48, -33>
 +----------+
 
-+----------+
-| 10110XXX | -> integer XXX in range <-56, -49>
-+----------+
++----------+---------------+
+| 10110ZZZ | VAR_TYPED_INT | -> variadic integer, sizeof(VAR_TYPED_INT) = ZZZ+1
++----------+---------------+
 
-+----------+---------------+
-| 10111ZZZ | VAR_TYPED_INT | -> variadic integer, sizeof(VAR_TYPED_INT) = ZZZ+1
-+----------+---------------+
+stores integer in format:
+absolute value multiplied by 2, and sign at LSB (1 - negative, 0 - positive)
+negative values are first incremented by 1.
 
   ZZZ (little endian):
-    = 0 -> VAR_TYPED_INT in range <-192, -65> + <128, 256>
-    = 2 -> VAR_TYPED_INT in range <-2^15, 2^15-1>
+    = 0 -> VAR_TYPED_INT in range <-176, -49> u <128, 255>
+    = 1 -> VAR_TYPED_INT in range <-2^15, 2^15-1>
     = 2 -> VAR_TYPED_INT in range <-2^23, 2^23-1>
     = 3 -> VAR_TYPED_INT in range <-2^31, 2^31-1>
     = 4 -> VAR_TYPED_INT in range <-2^39, 2^39-1>
@@ -66,7 +66,10 @@ Uses all values from 00000000b to 11000111b
 
 ```
 +----------+
-| 11000000 | -> UNDEFINED - FOR FUTURE IMPLEMENTATIONS
+| 10111UUU | -> UNDEFINED - FOR FUTURE USE
++----------+
++----------+
+| 11000000 | -> UNDEFINED - FOR FUTURE USE
 +----------+
 
 +----------+---------+
@@ -90,8 +93,10 @@ Uses all values from 00000000b to 11000111b
 +----------+
 
 +----------+
-| 11000110 | -> NULL
-+----------+
+| 11000110 | -> NULL -> can be interpreted as int=0, float=0, array sized=0,
++----------+    string sized=0, map sized=0, false, begin EMPTY object (no end
+                object is placed afterwards), cannot be interpreded only as end
+                object
 
 +----------+
 | 11000111 | -> begin object
@@ -149,37 +154,42 @@ Uses all values from 00000000b to 11000111b
 
 ### Internal VAR\_UINT type
 
+Integer uses little endian.
+
+To implement VAR\_UINT, std::countl\_one can be used with array of offsets and
+masks.
+
 ```
 +----------+
 | 0XXXXXXX | -> integer in range <0, 127>
 +----------+
 
 +----------+---------+
-| 10XXXXXX | byte[1] | -> integer in range <128, 16512>
+| 10XXXXXX | byte[1] | -> integer in range <2^7, 2^7+2^14>
 +----------+---------+
 
 +----------+---------+
-| 110XXXXX | byte[2] | -> integer in range <16513, 2113664>
+| 110XXXXX | byte[2] | -> integer in range <0, 2^21>
 +----------+---------+
 
 +----------+---------+
-| 1110XXXX | byte[3] | -> integer in range <2113665, 270549120>
+| 1110XXXX | byte[3] | -> integer in range <0, 2^28>
 +----------+---------+
 
 +----------+---------+
-| 11110XXX | byte[4] | -> integer in range <270549121, 34630287488>
+| 11110XXX | byte[4] | -> integer in range <0, 2^35>
 +----------+---------+
 
 +----------+---------+
-| 111110XX | byte[5] | -> integer in range <34630287489, 4432676798592>
+| 111110XX | byte[5] | -> integer in range <0, 2^42>
 +----------+---------+
 
 +----------+---------+
-| 1111110X | byte[6] | -> integer in range <4432676798593, 567382630219904>
+| 1111110X | byte[6] | -> integer in range <0, 2^49>
 +----------+---------+
 
 +----------+---------+
-| 11111110 | byte[7] | -> integer in range <567382630219905, 72624976668147840>
+| 11111110 | byte[7] | -> integer in range <0, 2^56>
 +----------+---------+
 
 +----------+---------+
@@ -189,42 +199,13 @@ Uses all values from 00000000b to 11000111b
 
 ### Internal VAR\_INT type
 
-```
-+----------+
-| 0XXXXXXX | -> integer in range <-64, 63>
-+----------+
+It is saved using VAR\_UINT function with modifying integer storage format.
+There are 3 variants:
 
-+----------+---------+
-| 10XXXXXX | byte[1] | -> integer in range <-8192, 8191>
-+----------+---------+
+ - value == 0:
+   store(0)
+ - value > 0:
+   store((abs(value) - 1) * 2)
+ - value < 0
+   store(value * 2 + 1)
 
-+----------+---------+
-| 110XXXXX | byte[2] | -> integer in range <-2^20, 2^20-1>
-+----------+---------+
-
-+----------+---------+
-| 1110XXXX | byte[3] | -> integer in range <-2^27, 2^27-1>
-+----------+---------+
-
-+----------+---------+
-| 11110XXX | byte[4] | -> integer in range <-2^34, 2^34-1>
-+----------+---------+
-
-+----------+---------+
-| 111110XX | byte[5] | -> integer in range <-2^41, 2^41-1>
-+----------+---------+
-
-+----------+---------+
-| 1111110X | byte[6] | -> integer in range <-2^48, 2^48-1>
-+----------+---------+
-
-+----------+---------+
-| 11111110 | byte[7] | -> integer in range <-2^55, 2^44-1>
-+----------+---------+
-
-+----------+---------+
-| 11111111 | byte[8] | -> integer in range <-2^63, 2^63-1>
-+----------+---------+
-```
-
-To implement VAR\_UINT std::countl\_one can be used with array of offsets.
