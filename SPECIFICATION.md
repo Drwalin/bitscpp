@@ -31,7 +31,7 @@ Uses all values from 00000000b to 11000111b
 ```
 Header byte is H
 
-H=<0x00, 0x9F> -> integer in range <-31, 128>
+H=<0x00, 0x9F> -> integer in range <-31, 128> (stores integer modified by +31)
 H=<0xA0, 0xAF> + BYTE[1] -> integer in range <-2^11, 2^11-1>
 H=<0xB0, 0xB6> + BYTE[n = (H-0xB0+2)] -> integer in range <-2^(8n-1), 2^(8n-1)>
 
@@ -52,29 +52,25 @@ H=0xBA -> bfloat16
 ### Miscelaneus types
 
 ```
-H=0xBB -> NULL -> can be interpreted as int=0, float=0, array sized=0,
-          string sized=0, map sized=0, false, begin EMPTY object (no end
-          object is placed afterwards), cannot be interpreded only as end
-          object
-H=0xBC -> false
-H=0xBD -> true
-H=0xBE -> begin object
-H=0xBF -> end object
+H=0xBB -> false
+H=0xBC -> true
+H=0xBD -> begin object
+H=0xBE -> end object
 ```
 
 ### Map type
 
 ```
-H=0xC0 -> empty map
-H=0xC1 + VAR_UINT -> header for map of VAR_UINT+1 pairs of elements, both key
+H=0xCF -> empty map
+H=0xC0 + VAR_UINT -> header for map of size (VAR_UINT+1) pairs of elements, both key
                      and value can be of any type
 ```
 
 ### Array of any type/size elements
 
 ```
-H=<0xC2, 0xD2> -> array of size H-0xC2 in <0, 16>
-H=0xD3 + VAR_UINT -> array of size VAR_UINT+17
+H=<0xC1, 0xD2> -> array of size H-0xC1 in <0, 17>
+H=0xD3 + VAR_UINT -> array of size VAR_UINT+18
 ```
 
 ### Strings / byte arrays
