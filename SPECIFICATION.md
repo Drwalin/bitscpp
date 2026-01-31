@@ -18,138 +18,82 @@ attempts of deserialization of the same object are Undefined Behavior.
 In case of deserializing integer with value that does not fit in supplied value
 than overflow flag is set and value is undefined.
 
+All multi-byte structures are stored in little-endian order.
+
+```
+In the following subsections: "H" is used to describe header byte.
+```
+
 ### Integers
 
 Uses all values from 00000000b to 11000111b
 
 ```
- MSB    LSB 
-  V      V
-+----------+
-| 00000000 |
-+----------+
+Header byte is H
+
+H=<0x00, 0x9F> -> integer in range <-31, 128>
+H=<0xA0, 0xAF> + BYTE[1] -> integer in range <-2^11, 2^11-1>
+H=<0xB0, 0xB6> + BYTE[n = (H-0xB0+2)] -> integer in range <-2^(8n-1), 2^(8n-1)>
+
+Values of integers before storing are transformed in the following way:
+
+new_value = value < 0 ? ((~value)<<1) | 1 : value << 1
 ```
 
+### Floats
+
 ```
-+----------+
-| 0XXXXXXX | -> integer XXXXXXX in range <0, 127>
-+----------+
-
-+----------+
-| 100XXXXX | -> integer XXXXX in range <-32, -1>
-+----------+
-
-+----------+
-| 1010XXXX | -> integer XXXX in range <-48, -33>
-+----------+
-
-+----------+---------------+
-| 10110ZZZ | VAR_TYPED_INT | -> variadic integer, sizeof(VAR_TYPED_INT) = ZZZ+1
-+----------+---------------+
-
-stores integer in format:
-absolute value multiplied by 2, and sign at LSB (1 - negative, 0 - positive)
-negative values are first incremented by 1.
-
-  ZZZ (little endian):
-    = 0 -> VAR_TYPED_INT in range <-176, -49> u <128, 255>
-    = 1 -> VAR_TYPED_INT in range <-2^15, 2^15-1>
-    = 2 -> VAR_TYPED_INT in range <-2^23, 2^23-1>
-    = 3 -> VAR_TYPED_INT in range <-2^31, 2^31-1>
-    = 4 -> VAR_TYPED_INT in range <-2^39, 2^39-1>
-    = 5 -> VAR_TYPED_INT in range <-2^47, 2^47-1>
-    = 6 -> VAR_TYPED_INT in range <-2^55, 2^55-1>
-    = 7 -> VAR_TYPED_INT in range <-2^63, 2^63-1>
+H=0xB7 -> IEEE 754 half-precision binary floating-point format: binary16
+H=0xB8 -> IEEE 754 single-precision binary floating-point format: binary32
+H=0xB9 -> IEEE 754 double-precision binary floating-point format: binary64
+H=0xBA -> bfloat16
 ```
 
 ### Miscelaneus types
 
 ```
-+----------+
-| 10111UUU | -> UNDEFINED - FOR FUTURE USE
-+----------+
-+----------+
-| 11000000 | -> UNDEFINED - FOR FUTURE USE
-+----------+
+H=0xBB -> NULL -> can be interpreted as int=0, float=0, array sized=0,
+          string sized=0, map sized=0, false, begin EMPTY object (no end
+          object is placed afterwards), cannot be interpreded only as end
+          object
+H=0xBC -> false
+H=0xBD -> true
+H=0xBE -> begin object
+H=0xBF -> end object
+```
 
-+----------+---------+
-| 11000001 | 2 BYTES | -> float16
-+----------+---------+
+### Map type
 
-+----------+---------+
-| 11000010 | 4 BYTES | -> float32
-+----------+---------+
-
-+----------+---------+
-| 11000011 | 8 BYTES | -> float64
-+----------+---------+
-
-+----------+
-| 11000100 | -> false
-+----------+
-
-+----------+
-| 11000101 | -> true
-+----------+
-
-+----------+
-| 11000110 | -> NULL -> can be interpreted as int=0, float=0, array sized=0,
-+----------+    string sized=0, map sized=0, false, begin EMPTY object (no end
-                object is placed afterwards), cannot be interpreded only as end
-                object
-
-+----------+
-| 11000111 | -> begin object
-+----------+
-
-+----------+
-| 11001000 | -> end object
-+----------+
-
-+----------+
-| 11001001 | -> empty map
-+----------+
-
-+----------+----------+------------------------------+
-| 11001010 | VAR_UINT | VAR_UINT+1 pairs of elements | -> map of any type to any
-+----------+----------+------------------------------+    type
+```
+H=0xC0 -> empty map
+H=0xC1 + VAR_UINT -> header for map of VAR_UINT+1 pairs of elements, both key
+                     and value can be of any type
 ```
 
 ### Array of any type/size elements
 
 ```
-+----------+
-| 11001011 | -> empty array
-+----------+
-
-+----------+----------+----------------------+
-| 11001100 | VAR_UINT | VAR_UINT+17 elements | -> array of size VAR_UINT+17
-+----------+----------+----------------------+
-
-+----------+-----------------+
-| 1101AAAA | AAAA+1 elements | -> array of size AAAA+1
-+----------+-----------------+
+H=<0xC2, 0xD2> -> array of size H-0xC2 in <0, 16>
+H=0xD3 + VAR_UINT -> array of size VAR_UINT+17
 ```
 
 ### Strings / byte arrays
 
 ```
-+----------+
-| 11001101 | -> empty string / byte array
-+----------+
+H=<0xD4, 0xF8> -> string of size H-0xD4 in <0, 36>
+H=0xF9 + VAR_UINT -> string of size VAR_UINT+37
+```
 
-+----------+--------+----------+
-| 11001110 | string | 00000000 | -> null terminated string (c-string)
-+----------+--------+----------+
+### C-String
 
-+----------+----------+----------------+
-| 11001111 | VAR_UINT | byte[VAR_UINT] | -> byte array of size VAR_UINT+33
-+----------+----------+----------------+
+```
+H=0xFA -> null terminated c-string
+```
 
-+----------+---------------+
-| 111WWWWW | byte[WWWWW+1] | -> byte array of size WWWWW+1
-+----------+---------------+
+### Reserved for future use
 
+```
+H=<0xFB, 0xFF> -> reserved for future use
 ```
 
 ### Internal VAR\_UINT type
@@ -160,52 +104,21 @@ To implement VAR\_UINT, std::countl\_one can be used with array of offsets and
 masks.
 
 ```
-+----------+
-| 0XXXXXXX | -> integer in range <0, 127>
-+----------+
-
-+----------+---------+
-| 10XXXXXX | byte[1] | -> integer in range <2^7, 2^7+2^14>
-+----------+---------+
-
-+----------+---------+
-| 110XXXXX | byte[2] | -> integer in range <0, 2^21>
-+----------+---------+
-
-+----------+---------+
-| 1110XXXX | byte[3] | -> integer in range <0, 2^28>
-+----------+---------+
-
-+----------+---------+
-| 11110XXX | byte[4] | -> integer in range <0, 2^35>
-+----------+---------+
-
-+----------+---------+
-| 111110XX | byte[5] | -> integer in range <0, 2^42>
-+----------+---------+
-
-+----------+---------+
-| 1111110X | byte[6] | -> integer in range <0, 2^49>
-+----------+---------+
-
-+----------+---------+
-| 11111110 | byte[7] | -> integer in range <0, 2^56>
-+----------+---------+
-
-+----------+---------+
-| 11111111 | byte[8] | -> integer in range <0, 2^64-1>
-+----------+---------+
+H=<0x00, 0x7F> -> integer in range <0, 2^7-1>
+H=<0x80, 0xBF> + BYTE[1] -> integer ((H&0x3F)|(BYTE[1]<<6)) in <2^7, 2^7+2^14-1>
+H=<0xC0, 0xDF> + BYTE[2] -> integer ((H&0x1F)|(BYTE[2]<<5)) in <0, 2^21-1>
+H=<0xE0, 0xEF> + BYTE[3] -> integer ((H&0x0F)|(BYTE[3]<<4)) in <0, 2^28-1>
+H=<0xF0, 0xF7> + BYTE[4] -> integer ((H&0x07)|(BYTE[4]<<3)) in <0, 2^35-1>
+H=<0xF8, 0xFB> + BYTE[5] -> integer ((H&0x03)|(BYTE[5]<<2)) in <0, 2^42-1>
+H=<0xFC, 0xFD> + BYTE[6] -> integer ((H&0x01)|(BYTE[6]<<1)) in <0, 2^49-1>
+H=0xFE         + BYTE[7] -> integer (BYTE[7]) in <0, 2^56-1>
+H=0xFF         + BYTE[8] -> integer (BYTE[8]) in <0, 2^64-1>
 ```
 
 ### Internal VAR\_INT type
 
-It is saved using VAR\_UINT function with modifying integer storage format.
-There are 3 variants:
-
- - value == 0:
-   store(0)
- - value > 0:
-   store((abs(value) - 1) * 2)
- - value < 0
-   store(value * 2 + 1)
+It is saved using VAR\_UINT function but firstly modifying it's value:
+```
+new_value = value < 0 ? ((~value)<<1) | 1 : value << 1
+```
 
