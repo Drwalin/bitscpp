@@ -1,4 +1,4 @@
-// Copyright (C) 2023-2026 Marek Zalewski aka Drwalin
+// Copyright (C) 2026-2026 Marek Zalewski aka Drwalin
 //
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
@@ -16,7 +16,7 @@ enum Type : uint8_t {
 	V2_NULL = 0,
 	V2_INT = 1,
 	V2_FLOAT = 2,
-	V2_BOOL = 3,
+	V2_BOOLEAN = 3,
 	V2_ARRAY = 4,
 	V2_STRING = 5,
 	V2_MAP = 6,
@@ -26,27 +26,63 @@ enum Type : uint8_t {
 	V2_RESERVED = 9,
 	
 	V2_DETAIL_HALF = V2_FLOAT | 32,
-	V2_DETAIL_BHALF = V2_FLOAT | 96,
+	V2_DETAIL_BFLOAT = V2_FLOAT | 96,
 	V2_DETAIL_DOUBLE = V2_FLOAT | 64,
 	V2_DETAIL_CSTRING = V2_STRING | 32,
 };
 
-[[maybe_unused]] const uint8_t BEG_IMMEDIATE_INTEGER = 0x00;
-[[maybe_unused]] const uint8_t END_IMMEDIATE_INTEGER = 0xA0; // exclusive
+enum TypeHeader : uint8_t {
+	BEG_IMMEDIATE_INTEGER = 0x00,
+	END_IMMEDIATE_INTEGER = 0x9F, // inclusive
+	BEG_12B_INTEGER = 0xA0,
+	END_12B_INTEGER = 0xAF, // inclusive
+	BEG_SIZED_INTEGER = 0xB0,
+	END_SIZED_INTEGER = 0xB6, // inclusive
 
-[[maybe_unused]] const uint8_t BEG_12B_INTEGER = 0xA0;
-[[maybe_unused]] const uint8_t END_12B_INTEGER = 0xB0; // exclusive
+	BEG_HALF = 0xB7,
+	BEG_FLOAT = 0xB8,
+	BEG_DOUBLE = 0xB9,
+	BEG_BFLOAT = 0xBA,
 
-[[maybe_unused]] const uint8_t BEG_SIZED_INTEGER = 0xB0;
-[[maybe_unused]] const uint8_t END_SIZED_INTEGER = 0xB7; // exclusive
+	BEG_BOOLEAN = 0xBB,
+	END_BOOLEAN = 0xBC, // inclusive
+	BOOLEAN_FALSE = BEG_BOOLEAN,
+	BOOLEAN_TRUE = END_BOOLEAN,
 
-[[maybe_unused]] const uint8_t BEG_HALF = 0xB7;
-[[maybe_unused]] const uint8_t BEG_FLOAT = 0xB8;
-[[maybe_unused]] const uint8_t BEG_DOUBLE = 0xB9;
-[[maybe_unused]] const uint8_t BEG_BFLOAT = 0xBA;
+	BEG_OBJECT = 0xBD,
+	END_OBJECT = 0xBE, // inclusive
 
+	BEG_MAP = 0xBF,
+	END_MAP = 0xC0, // inclusive
 
-[[maybe_unused]] const Type headerTranslation[256] = {
+	BEG_ARRAY_IMMEDIATE_SIZED = 0xC1,
+	END_ARRAY_IMMEDIATE_SIZED = 0xD2, // inclusive
+	BEG_ARRAY_VAR_SIZED = 0xD3,
+
+	BEG_STRING_IMMEDIATE_SIZED = 0xD4,
+	END_STRING_IMMEDIATE_SIZED = 0xF8, // inclusive
+	BEG_STRING_VAR_SIZED = 0xF9,
+	BEG_CSTRING = 0xFA,
+	
+	BEG_RESERVED = 0xFB,
+	END_RESERVED = 0xFF, // inclusive
+};
+
+enum TypeHeader_ImmediateValues : uint8_t {
+	IMMEDIATE_STRING_MAX_SIZE = END_STRING_IMMEDIATE_SIZED - BEG_STRING_IMMEDIATE_SIZED,
+	IMMEDIATE_INTEGER_MAX = END_IMMEDIATE_INTEGER - BEG_IMMEDIATE_INTEGER,
+	IMMEDIATE_ARRAY_MAX_SIZE = END_ARRAY_IMMEDIATE_SIZED - BEG_ARRAY_IMMEDIATE_SIZED,
+};
+static_assert(IMMEDIATE_STRING_MAX_SIZE == 36);
+static_assert(IMMEDIATE_INTEGER_MAX == 159);
+static_assert(IMMEDIATE_ARRAY_MAX_SIZE == 17);
+
+enum TypeHeader_ImmediateIntegerRanges : int64_t {
+	IMMEDIATE_INTEGER_VALUE_MIN = -31,
+	IMMEDIATE_INTEGER_VALUE_MAX = 128,
+};
+
+[[maybe_unused]] constexpr Type headerTranslation[256] = {
 V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT,
 V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT,
 V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT,
@@ -73,10 +109,10 @@ V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT,
 
 V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT, V2_INT,
 
-V2_DETAIL_HALF, V2_FLOAT, V2_DETAIL_DOUBLE, V2_DETAIL_BHALF,
+V2_DETAIL_HALF, V2_FLOAT, V2_DETAIL_DOUBLE, V2_DETAIL_BFLOAT,
 
-V2_BOOL,
-V2_BOOL,
+V2_BOOLEAN,
+V2_BOOLEAN,
 V2_OBJECT_BEGIN,
 V2_OBJECT_END,
 
@@ -84,7 +120,7 @@ V2_MAP, V2_MAP,
 
 V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY,
 V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY, V2_ARRAY,
-V2_ARRAY,
+V2_ARRAY, V2_ARRAY,
 V2_ARRAY,
 
 V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING,
@@ -96,13 +132,41 @@ V2_STRING,
 
 V2_DETAIL_CSTRING,
 
-V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED,
-
-
-
-
-
+V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED,
 };
+
+static_assert(headerTranslation[BEG_IMMEDIATE_INTEGER] == V2_INT);
+static_assert(headerTranslation[END_IMMEDIATE_INTEGER] == V2_INT);
+static_assert(headerTranslation[BEG_12B_INTEGER] == V2_INT);
+static_assert(headerTranslation[END_12B_INTEGER] == V2_INT);
+static_assert(headerTranslation[BEG_SIZED_INTEGER] == V2_INT);
+static_assert(headerTranslation[END_SIZED_INTEGER] == V2_INT);
+
+static_assert(headerTranslation[BEG_HALF] == V2_DETAIL_HALF);
+static_assert(headerTranslation[BEG_FLOAT] == V2_FLOAT);
+static_assert(headerTranslation[BEG_DOUBLE] == V2_DETAIL_DOUBLE);
+static_assert(headerTranslation[BEG_BFLOAT] == V2_DETAIL_BFLOAT);
+
+static_assert(headerTranslation[BEG_BOOLEAN] == V2_BOOLEAN);
+static_assert(headerTranslation[END_BOOLEAN] == V2_BOOLEAN);
+
+static_assert(headerTranslation[BEG_OBJECT] == V2_OBJECT_BEGIN);
+static_assert(headerTranslation[END_OBJECT] == V2_OBJECT_END);
+
+static_assert(headerTranslation[BEG_MAP] == V2_MAP);
+static_assert(headerTranslation[END_MAP] == V2_MAP);
+
+static_assert(headerTranslation[BEG_ARRAY_IMMEDIATE_SIZED] == V2_ARRAY);
+static_assert(headerTranslation[END_ARRAY_IMMEDIATE_SIZED] == V2_ARRAY);
+static_assert(headerTranslation[BEG_ARRAY_VAR_SIZED] == V2_ARRAY);
+
+static_assert(headerTranslation[BEG_STRING_IMMEDIATE_SIZED] == V2_STRING);
+static_assert(headerTranslation[END_STRING_IMMEDIATE_SIZED] == V2_STRING);
+static_assert(headerTranslation[BEG_STRING_VAR_SIZED] == V2_STRING);
+static_assert(headerTranslation[BEG_CSTRING] == V2_DETAIL_CSTRING);
+
+static_assert(headerTranslation[BEG_RESERVED] == V2_RESERVED);
+static_assert(headerTranslation[END_RESERVED] == V2_RESERVED);
 }
 }
 

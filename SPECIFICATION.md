@@ -35,7 +35,8 @@ H=<0x00, 0x9F> -> integer in range <-31, 128> (stores integer modified by +31)
 H=<0xA0, 0xAF> + BYTE[1] -> integer in range <-2^11, 2^11-1>
 H=<0xB0, 0xB6> + BYTE[n = (H-0xB0+2)] -> integer in range <-2^(8n-1), 2^(8n-1)>
 
-Values of integers before storing are transformed in the following way:
+Values of integers before storing in more than single byte are transformed in
+the following way:
 
 new_value = value < 0 ? ((~value)<<1) | 1 : value << 1
 ```
@@ -61,7 +62,7 @@ H=0xBE -> end object
 ### Map type
 
 ```
-H=0xCF -> empty map
+H=0xBF -> empty map
 H=0xC0 + VAR_UINT -> header for map of size (VAR_UINT+1) pairs of elements, both key
                      and value can be of any type
 ```
