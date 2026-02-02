@@ -25,52 +25,18 @@ private:
 	Endian() = delete;
 };
 
-inline uint8_t HostToNetworkUint(uint8_t v) { return v; }
+uint8_t HostToNetworkUint(uint8_t v);
+uint16_t HostToNetworkUint(uint16_t v);
+uint32_t HostToNetworkUint(uint32_t v);
+uint64_t HostToNetworkUint(uint64_t v);
 
-inline uint16_t HostToNetworkUint(uint16_t v)
-{
-	if constexpr (Endian::little) {
-		return v;
-	} else {
-		return std::byteswap<uint16_t>(v);
-	}
-}
+uint8_t NetworkToHostUint(uint8_t v);
+uint16_t NetworkToHostUint(uint16_t v);
+uint32_t NetworkToHostUint(uint32_t v);
+uint64_t NetworkToHostUint(uint64_t v);
 
-inline uint32_t HostToNetworkUint(uint32_t v)
-{
-	if constexpr (Endian::little) {
-		return v;
-	} else {
-		return std::byteswap<uint32_t>(v);
-	}
-}
-
-inline uint64_t HostToNetworkUint(uint64_t v)
-{
-	if constexpr (Endian::little) {
-		return v;
-	} else {
-		return std::byteswap<uint64_t>(v);
-	}
-}
-
-inline uint8_t NetworkToHostUint(uint8_t v) { return HostToNetworkUint(v); }
-inline uint16_t NetworkToHostUint(uint16_t v) { return HostToNetworkUint(v); }
-inline uint32_t NetworkToHostUint(uint32_t v) { return HostToNetworkUint(v); }
-inline uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
-
-inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
-{
-	union {
-		uint64_t v;
-		uint8_t ar[8];
-	};
-	v = HostToNetworkUint(value);
-	memcpy(buffer, ar, bytes);
-	for (int i=0; i<bytes; ++i, ++buffer, value >>= 8) {
-		*buffer = value & 0xFF;
-	}
-}
+void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes);
+uint64_t ReadBytesInNetworkOrder(uint8_t *buffer, int bytes);
 } // namespace bitscpp
 
 #endif

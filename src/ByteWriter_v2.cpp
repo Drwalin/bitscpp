@@ -5,12 +5,10 @@
 
 #include <cassert>
 
-// #include <bit>
+#include "../include/bitscpp/Endianness.hpp"
 
-#include "Endianness.hpp"
-
-#include "V2_Specification.hpp"
-#include "ByteWriter_v2.hpp"
+#include "../include/bitscpp/V2_Specification.hpp"
+#include "../include/bitscpp/ByteWriter_v2.hpp"
 
 #define ByteWriter ByteWriter##BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
 
@@ -18,8 +16,6 @@ namespace bitscpp
 {
 namespace v2
 {
-
-// strings
 ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
 {
 	if (bytes <= IMMEDIATE_STRING_MAX_SIZE) {
@@ -68,7 +64,6 @@ ByteWriter &ByteWriter::op_cstring(const char *str, uint32_t size)
 	return *this;
 }
 
-// constant size byte array
 ByteWriter &ByteWriter::op_byte_array(const uint8_t *data,
 											 uint32_t bytes)
 {
@@ -193,12 +188,28 @@ ByteWriter &ByteWriter::op_half(float value)
 }
 ByteWriter &ByteWriter::op_bfloat(float value)
 {
+	const uint32_t offset = _expand(3);
+	
+	constexpr uint32_t exponentMask = 0x7F800000;
+	constexpr uint32_t fractionMask = 0x007FFFFF;
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
-	const uint16_t bfloat = bv32 >> 16;
-	uint32_t offset = _expand(3);
-	ptr[offset] = BEG_BFLOAT;
-	WriteBytesInNetworkOrder(ptr + offset + 1, bfloat, 2);
-	return *this;
+	
+	const uint32_t exponent = bv32 & exponentMask;
+	const uint32_t fraction = bv32 & fractionMask;
+	
+	if (exponent == exponentMask) {
+		[[unlikely]];
+		ptr[offset] = BEG_BFLOAT;
+		ptr[offset+1] = fraction == 0 ? 0x80 : 0xFF;
+		ptr[offset+2] = 0x7F;
+		return *this;
+	} else {
+		[[likely]];
+		const uint16_t bfloat = bv32 >> 16;
+		ptr[offset] = BEG_BFLOAT;
+		WriteBytesInNetworkOrder(ptr + offset + 1, bfloat, 2);
+		return *this;
+	}
 }
 ByteWriter &ByteWriter::op(float value)
 {
@@ -228,36 +239,42 @@ ByteWriter &ByteWriter::op_double(double value)
 
 ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 {
+	if (elements == 0) {
+		_append_byte(BEG_MAP_EMPTY);
+	} else {
+		_reserve_expand(10);
+		_append_byte(BEG_MAP_SIZED);
+		op_untyped_var_uint(elements-1);
+	}
 	return *this;
 }
 
 ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 {
 	_reserve_expand(10);
-	if (elements == 0) { // empty array
-		_append_byte(0b11001011);
-	} else if (elements <= 16) { // size embeded in header
-		_append_byte(0b11010000 | (elements - 1));
+	if (elements <= 17) { // size embeded in header
+		_append_byte(BEG_ARRAY_IMMEDIATE_SIZED + elements - 1);
 	} else { // size in following VAR_INT+17
-		_append_byte(0b11001100);
-		op_untyped_var_uint(elements - 17);
+		_append_byte(BEG_ARRAY_VAR_SIZED);
+		op_untyped_var_uint(elements - 18);
 	}
 	return *this;
 }
 
 ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 {
-	const uint32_t bits = std::bit_width(value);
-	uint32_t bytes = bits / 7;
-	if (bytes == 0) {
-		constexpr uint8_t byte = 0;
+	if ( value <= 0x7F) {
+		uint8_t byte = (uint8_t)value;
 		_append(&byte, 1);
 	} else {
-		constexpr uint8_t masks[16] = {0x00, 0x7F, 0x3F, 0x1F, 0x0F,
-									   0x07, 0x03, 0x01, 0x00, 0x00};
-		constexpr uint8_t ones[16] = {0x00, 0x00, 0x80, 0xC0, 0xE0,
-									  0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
-		constexpr uint8_t shifts[16] = {0, 7, 6, 5, 4, 3, 2, 1, 0, 0};
+		const uint32_t bits = std::bit_width(value);
+		const uint32_t bytes = (bits+6) / 7;
+
+		constexpr uint8_t masks[] = {0x00, 0x7F, 0x3F, 0x1F, 0x0F,
+									 0x07, 0x03, 0x01, 0x00, 0x00};
+		constexpr uint8_t ones[] = {0x00, 0x00, 0x80, 0xC0, 0xE0,
+									0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
+		constexpr uint8_t shifts[] = {0, 7, 6, 5, 4, 3, 2, 1, 0, 0};
 
 		const uint32_t offset = _expand(bytes);
 
@@ -265,8 +282,7 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 		ptr[offset] = header;
 
 		value >>= shifts[bytes];
-		value = HostToNetworkUint(value);
-		memcpy(ptr + offset + 1, &value, bytes - 1);
+		WriteBytesInNetworkOrder(ptr + offset + 1, value, bytes - 1);
 	}
 	return *this;
 }

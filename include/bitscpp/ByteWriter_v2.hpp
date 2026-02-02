@@ -128,7 +128,7 @@ public:
 	ByteWriter &op(int32_t v);
 	ByteWriter &op(int64_t v);
 	ByteWriter &op(char v);
-	
+
 	ByteWriter &op_uint(uint64_t v);
 	ByteWriter &op_int(int64_t v);
 

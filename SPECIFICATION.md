@@ -102,7 +102,7 @@ masks.
 
 ```
 H=<0x00, 0x7F> -> integer in range <0, 2^7-1>
-H=<0x80, 0xBF> + BYTE[1] -> integer ((H&0x3F)|(BYTE[1]<<6)) in <2^7, 2^7+2^14-1>
+H=<0x80, 0xBF> + BYTE[1] -> integer ((H&0x3F)|(BYTE[1]<<6)) in <0, 2^14-1>
 H=<0xC0, 0xDF> + BYTE[2] -> integer ((H&0x1F)|(BYTE[2]<<5)) in <0, 2^21-1>
 H=<0xE0, 0xEF> + BYTE[3] -> integer ((H&0x0F)|(BYTE[3]<<4)) in <0, 2^28-1>
 H=<0xF0, 0xF7> + BYTE[4] -> integer ((H&0x07)|(BYTE[4]<<3)) in <0, 2^35-1>
