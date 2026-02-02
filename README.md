@@ -54,3 +54,10 @@ github.com/fraillt/cpp\_serializers\_benchmark)
 | zpp\_bits   | general                        | 57088B   | 8413B     | 604ms    | 593ms    |
 | zpp\_bits   | fixed buffer                   | 44712B   | 8413B     | 552ms    | 612ms    |
 
+### Thirdparties
+
+Bitscpp uses modified version (extracted code from)
+github.com/acgessler/half\_float for single float <-> half float conversion.
+acgessler/half\_float is attributed to:
+Chris "Krishty" Maiwald, Alexander "Aramis" Gessler
+

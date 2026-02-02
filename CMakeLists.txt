@@ -10,6 +10,11 @@ option(BITSCPP_BUILD_TEST "Build bitscpp tests" ON)
 
 include_directories(./include/)
 
+aux_source_directory(./src/ source_files)
+add_library(bitscpp STATIC
+	${source_files}
+)
+
 if(BITSCPP_BUILD_TEST)
 	aux_source_directory(./include/bitscpp header_files)
 	aux_source_directory(./tests source_files)
@@ -17,5 +22,6 @@ if(BITSCPP_BUILD_TEST)
 	add_executable(test
 		${header_files}
 		${source_files}
+		./thirdpart/half_float/HalfFloat.cpp
 	)
 endif()

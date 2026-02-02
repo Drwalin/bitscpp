@@ -13,22 +13,24 @@ namespace bitscpp
 namespace v2
 {
 enum Type : uint8_t {
-	V2_NULL = 0,
-	V2_INT = 1,
-	V2_FLOAT = 2,
-	V2_BOOLEAN = 3,
-	V2_ARRAY = 4,
-	V2_STRING = 5,
-	V2_MAP = 6,
-	V2_OBJECT_BEGIN = 7,
-	V2_OBJECT_END = 8,
-
-	V2_RESERVED = 9,
+	V2_ERROR = 0x00,
 	
-	V2_DETAIL_HALF = V2_FLOAT | 32,
-	V2_DETAIL_BFLOAT = V2_FLOAT | 96,
-	V2_DETAIL_DOUBLE = V2_FLOAT | 64,
-	V2_DETAIL_CSTRING = V2_STRING | 32,
+	V2_NULL = 0x01,
+	V2_INT = 0x02,
+	V2_FLOAT = 0x03,
+	V2_BOOLEAN = 0x04,
+	V2_ARRAY = 0x05,
+	V2_STRING = 0x06,
+	V2_CSTRING = 0x07,
+	V2_MAP = 0x08,
+	V2_OBJECT_BEGIN = 0x09,
+	V2_OBJECT_END = 0x0A,
+
+	V2_RESERVED = 0x1F,
+	
+	V2_DETAIL_HALF = V2_FLOAT | 0x20,
+	V2_DETAIL_BFLOAT = V2_FLOAT | 0x60,
+	V2_DETAIL_DOUBLE = V2_FLOAT | 0x40,
 };
 
 enum TypeHeader : uint8_t {
@@ -39,10 +41,12 @@ enum TypeHeader : uint8_t {
 	BEG_SIZED_INTEGER = 0xB0,
 	END_SIZED_INTEGER = 0xB6, // inclusive
 
+	BEG_FLOATS = 0xB7,
 	BEG_HALF = 0xB7,
 	BEG_FLOAT = 0xB8,
 	BEG_DOUBLE = 0xB9,
 	BEG_BFLOAT = 0xBA,
+	END_FLOATS = 0xBA,
 
 	BEG_BOOLEAN = 0xBB,
 	END_BOOLEAN = 0xBC, // inclusive
@@ -132,7 +136,7 @@ enum TypeHeader_ImmediateIntegerRanges : int64_t {
 	V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING,
 	V2_STRING,
 
-	V2_DETAIL_CSTRING,
+	V2_CSTRING,
 
 	V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED,
 };
@@ -165,7 +169,7 @@ static_assert(headerTranslation[BEG_ARRAY_VAR_SIZED] == V2_ARRAY);
 static_assert(headerTranslation[BEG_STRING_IMMEDIATE_SIZED] == V2_STRING);
 static_assert(headerTranslation[END_STRING_IMMEDIATE_SIZED] == V2_STRING);
 static_assert(headerTranslation[BEG_STRING_VAR_SIZED] == V2_STRING);
-static_assert(headerTranslation[BEG_CSTRING] == V2_DETAIL_CSTRING);
+static_assert(headerTranslation[BEG_CSTRING] == V2_CSTRING);
 
 static_assert(headerTranslation[BEG_RESERVED] == V2_RESERVED);
 static_assert(headerTranslation[END_RESERVED] == V2_RESERVED);

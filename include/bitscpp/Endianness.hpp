@@ -36,7 +36,9 @@ uint32_t NetworkToHostUint(uint32_t v);
 uint64_t NetworkToHostUint(uint64_t v);
 
 void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes);
-uint64_t ReadBytesInNetworkOrder(uint8_t *buffer, int bytes);
+void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes);
+void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes);
+uint64_t ReadBytesInNetworkOrder(const uint8_t *buffer, int bytes);
 } // namespace bitscpp
 
 #endif

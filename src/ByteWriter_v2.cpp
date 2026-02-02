@@ -5,9 +5,11 @@
 
 #include <cassert>
 
-#include "../include/bitscpp/Endianness.hpp"
+#include "../thirdpart/half_float/HalfFloat.hpp"
 
+#include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/V2_Specification.hpp"
+
 #include "../include/bitscpp/ByteWriter_v2.hpp"
 
 #define ByteWriter ByteWriter##BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
@@ -22,7 +24,7 @@ ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
 		_append_byte(BEG_STRING_IMMEDIATE_SIZED + (uint8_t)bytes);
 	} else {
 		_append_byte(BEG_STRING_VAR_SIZED);
-		op_untyped_var_uint(bytes-IMMEDIATE_STRING_MAX_SIZE-1);
+		op_untyped_var_uint(bytes - IMMEDIATE_STRING_MAX_SIZE - 1);
 	}
 	return *this;
 }
@@ -32,7 +34,7 @@ ByteWriter &ByteWriter::op_sized_string_header(uint32_t bytes)
 }
 ByteWriter &ByteWriter::op_cstring_header()
 {
-	_append_byte(V2_DETAIL_CSTRING);
+	_append_byte(V2_CSTRING);
 	return *this;
 }
 
@@ -50,7 +52,7 @@ ByteWriter &ByteWriter::op_sized_string(const char *str)
 }
 ByteWriter &ByteWriter::op_sized_string(const char *str, uint32_t size)
 {
-	return op_byte_array((const uint8_t*)str, size);
+	return op_byte_array((const uint8_t *)str, size);
 }
 ByteWriter &ByteWriter::op_cstring(const char *str)
 {
@@ -58,43 +60,32 @@ ByteWriter &ByteWriter::op_cstring(const char *str)
 }
 ByteWriter &ByteWriter::op_cstring(const char *str, uint32_t size)
 {
-	_reserve_expand(size+2);
+	_reserve_expand(size + 2);
 	op_cstring_header();
-	_append((const uint8_t*)str, size+1);
+	_append((const uint8_t *)str, size + 1);
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_byte_array(const uint8_t *data,
-											 uint32_t bytes)
+ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
 {
-	_reserve_expand(bytes+6);
+	_reserve_expand(bytes + 6);
 	op_sized_byte_array_header(bytes);
 	_append(data, bytes);
 	return *this;
 }
-ByteWriter &ByteWriter::op_byte_array(const int8_t *data,
-											 uint32_t bytes)
+ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
 {
-	return op_byte_array((const uint8_t*)data, bytes);
+	return op_byte_array(data.data(), data.size());
 }
 
-ByteWriter &ByteWriter::op(bool v)
-{
-	return op_boolean(v);
-}
+ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
 ByteWriter &ByteWriter::op_boolean(bool v)
 {
 	_append_byte(v ? BOOLEAN_TRUE : BOOLEAN_FALSE);
 	return *this;
 }
-ByteWriter &ByteWriter::op_false()
-{
-	return op_boolean(false);
-}
-ByteWriter &ByteWriter::op_true()
-{
-	return op_boolean(true);
-}
+ByteWriter &ByteWriter::op_false() { return op_boolean(false); }
+ByteWriter &ByteWriter::op_true() { return op_boolean(true); }
 ByteWriter &ByteWriter::op_begin_object()
 {
 	_append_byte(BEG_OBJECT);
@@ -106,47 +97,17 @@ ByteWriter &ByteWriter::op_end_object()
 	return *this;
 }
 
-ByteWriter &ByteWriter::op(uint8_t v)
-{
-	return op_uint(v);
-}
-ByteWriter &ByteWriter::op(uint16_t v)
-{
-	return op_uint(v);
-}
-ByteWriter &ByteWriter::op(uint32_t v)
-{
-	return op_uint(v);
-}
-ByteWriter &ByteWriter::op(uint64_t v)
-{
-	return op_uint(v);
-}
-ByteWriter &ByteWriter::op(int8_t v)
-{
-	return op_int(v);
-}
-ByteWriter &ByteWriter::op(int16_t v)
-{
-	return op_int(v);
-}
-ByteWriter &ByteWriter::op(int32_t v)
-{
-	return op_int(v);
-}
-ByteWriter &ByteWriter::op(int64_t v)
-{
-	return op_int(v);
-}
-ByteWriter &ByteWriter::op(char v)
-{
-	return op_int(v);
-}
+ByteWriter &ByteWriter::op(uint8_t v) { return op_uint(v); }
+ByteWriter &ByteWriter::op(uint16_t v) { return op_uint(v); }
+ByteWriter &ByteWriter::op(uint32_t v) { return op_uint(v); }
+ByteWriter &ByteWriter::op(uint64_t v) { return op_uint(v); }
+ByteWriter &ByteWriter::op(int8_t v) { return op_int(v); }
+ByteWriter &ByteWriter::op(int16_t v) { return op_int(v); }
+ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
+ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
+ByteWriter &ByteWriter::op(char v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op_uint(uint64_t v)
-{
-	return op_int(v);
-}
+ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op_int(int64_t v)
 {
 	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
@@ -155,7 +116,7 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 		_append_byte((uint8_t)(uint64_t)v);
 	} else {
 		uint64_t uv = (uint64_t)v;
-		uv = v < 0 ? ((~uv)<<1) | 1 : uv << 1;
+		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
 		const int bits = std::bit_width(uv);
 		if (bits <= 12) {
 			const uint64_t low = uv & 0xF;
@@ -164,14 +125,15 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 			assert(high < 256);
 			const uint32_t offset = _expand(2);
 			ptr[offset] = BEG_12B_INTEGER + (uint8_t)low;
-			ptr[offset+1] = (uint8_t)high;
+			ptr[offset + 1] = (uint8_t)high;
 		} else {
-			const int bytes = (bits+7) >> 3;
-			uint32_t offset = _expand(bytes+1);
+			const int bytes = (bits + 7) >> 3;
+			uint32_t offset = _expand(bytes + 1);
 			ptr[offset] = BEG_SIZED_INTEGER + bytes - 2;
-			assert(ptr[offset] >= BEG_SIZED_INTEGER && ptr[offset] <= END_SIZED_INTEGER);
+			assert(ptr[offset] >= BEG_SIZED_INTEGER &&
+				   ptr[offset] <= END_SIZED_INTEGER);
 			offset++;
-			for (int i=0; i<bytes; ++i, ++offset, uv >>= 8) {
+			for (int i = 0; i < bytes; ++i, ++offset, uv >>= 8) {
 				ptr[offset] = uv & 0xFF;
 				assert(uv > 0);
 			}
@@ -183,25 +145,27 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 
 ByteWriter &ByteWriter::op_half(float value)
 {
-	assert(false && "Unimplemented");
+	uint32_t offset = _expand(3);
+	ptr[offset] = BEG_HALF;
+	WriteBytesInNetworkOrder(ptr + offset + 1, Float32ToFloat16(value), 2);
 	return *this;
 }
 ByteWriter &ByteWriter::op_bfloat(float value)
 {
 	const uint32_t offset = _expand(3);
-	
+
 	constexpr uint32_t exponentMask = 0x7F800000;
 	constexpr uint32_t fractionMask = 0x007FFFFF;
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
-	
+
 	const uint32_t exponent = bv32 & exponentMask;
 	const uint32_t fraction = bv32 & fractionMask;
-	
+
 	if (exponent == exponentMask) {
 		[[unlikely]];
+		ptr[offset + 1] = fraction == 0 ? 0x80 : 0xFF;
 		ptr[offset] = BEG_BFLOAT;
-		ptr[offset+1] = fraction == 0 ? 0x80 : 0xFF;
-		ptr[offset+2] = 0x7F;
+		ptr[offset + 2] = 0x7F;
 		return *this;
 	} else {
 		[[likely]];
@@ -211,14 +175,8 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 		return *this;
 	}
 }
-ByteWriter &ByteWriter::op(float value)
-{
-	return op_float(value);
-}
-ByteWriter &ByteWriter::op(double value)
-{
-	return op_double(value);
-}
+ByteWriter &ByteWriter::op(float value) { return op_float(value); }
+ByteWriter &ByteWriter::op(double value) { return op_double(value); }
 ByteWriter &ByteWriter::op_float(float value)
 {
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
@@ -236,7 +194,6 @@ ByteWriter &ByteWriter::op_double(double value)
 	return *this;
 }
 
-
 ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 {
 	if (elements == 0) {
@@ -244,7 +201,7 @@ ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 	} else {
 		_reserve_expand(10);
 		_append_byte(BEG_MAP_SIZED);
-		op_untyped_var_uint(elements-1);
+		op_untyped_var_uint(elements - 1);
 	}
 	return *this;
 }
@@ -263,12 +220,12 @@ ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 
 ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 {
-	if ( value <= 0x7F) {
+	if (value <= 0x7F) {
 		uint8_t byte = (uint8_t)value;
 		_append(&byte, 1);
 	} else {
 		const uint32_t bits = std::bit_width(value);
-		const uint32_t bytes = (bits+6) / 7;
+		const uint32_t bytes = (bits + 6) / 7;
 
 		constexpr uint8_t masks[] = {0x00, 0x7F, 0x3F, 0x1F, 0x0F,
 									 0x07, 0x03, 0x01, 0x00, 0x00};
@@ -286,7 +243,6 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 	}
 	return *this;
 }
-
 ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
 {
 	const uint64_t uvalue = value;
