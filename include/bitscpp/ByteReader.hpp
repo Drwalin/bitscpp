@@ -62,6 +62,8 @@ namespace bitscpp {
 	class ByteReader {
 	public:
 		
+		constexpr static int VERSION = 1;
+		
 		template<typename T>
 		inline ByteReader& op(T* data) {
 			impl::__op_ptr(*this, data);

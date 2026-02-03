@@ -13,15 +13,16 @@ include_directories(./include/)
 aux_source_directory(./src/ source_files)
 add_library(bitscpp STATIC
 	${source_files}
+	./thirdpart/half_float/HalfFloat.cpp
 )
 
 if(BITSCPP_BUILD_TEST)
 	aux_source_directory(./include/bitscpp header_files)
-	aux_source_directory(./tests source_files)
+	aux_source_directory(./tests test_source_files)
 	
 	add_executable(test
 		${header_files}
-		${source_files}
-		./thirdpart/half_float/HalfFloat.cpp
+		${test_source_files}
 	)
+	target_link_libraries(test bitscpp)
 endif()

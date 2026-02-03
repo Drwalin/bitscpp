@@ -16,16 +16,16 @@
 #include "Endianness.hpp"
 
 namespace bitscpp {
-	
+
 	template<typename BT>
 	class ByteWriter;
-	
+
 	template<typename BT, typename T>
 	inline ByteWriter<BT>& op(ByteWriter<BT>& writer, const T& data) {
 		(*(T*)&data).__ByteStream_op(writer);
 		return writer;
 	}
-	
+
 	namespace impl {
 		template<typename BT, typename T>
 		static inline ByteWriter<BT>& __op_ptr(ByteWriter<BT>& writer, T*const data) {
@@ -39,7 +39,7 @@ namespace bitscpp {
 			return writer;
 		}
 	}
-	
+
 	/*
 	 * BT requires following interface:
 	 * class BT {
@@ -55,6 +55,8 @@ namespace bitscpp {
 	template<typename BT = std::vector<uint8_t>>
 	class ByteWriter {
 	public:
+		
+		constexpr static int VERSION = 1;
 		
 		template<typename T>
 		inline ByteWriter& op(T*const data) {

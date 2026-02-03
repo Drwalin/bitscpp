@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "ByteWriter.hpp"
+#include "ByteWriter_v2.hpp"
 
 namespace bitscpp {
 	template<typename BT, typename T>
@@ -19,7 +20,6 @@ namespace bitscpp {
 			s.op(v);
 		return s;
 	}
-	
 	template<typename BT, typename T>
 	inline ByteWriter<BT>& op(ByteWriter<BT>& s, const std::unordered_set<T>& set) {
 		s.op((uint32_t)set.size());
@@ -27,6 +27,28 @@ namespace bitscpp {
 			s.op(v);
 		return s;
 	}
+
+#define ByteWriter_v2 v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+	template <typename T>
+struct _impl_v2_writer<std::set<T>> {
+	static inline ByteWriter_v2 &op(ByteWriter_v2 &s, const std::set<T> &set)
+	{
+		s.op((uint32_t)set.size());
+		for(auto& v : set)
+			s.op(v);
+		return s;
+	}
+};
+	template<typename T>
+struct _impl_v2_writer<std::unordered_set<T>> {
+	static inline ByteWriter_v2& op(ByteWriter_v2& s, const std::unordered_set<T>& set) {
+		s.op((uint32_t)set.size());
+		for(auto& v : set)
+			s.op(v);
+		return s;
+	}
+};
+#undef ByteWriter_v2
 } // namespace bitscpp
 
 #endif

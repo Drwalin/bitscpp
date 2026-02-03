@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "ByteReader.hpp"
+#include "ByteReader_v2.hpp"
 
 namespace bitscpp {
 	template<typename T>
@@ -23,7 +24,6 @@ namespace bitscpp {
 		}
 		return s;
 	}
-	
 	template<typename T>
 	inline ByteReader<true>& op(ByteReader<true>& s, std::unordered_set<T>& set) {
 		uint32_t bytes;
@@ -35,8 +35,7 @@ namespace bitscpp {
 		}
 		return s;
 	}
-	
-	
+
 	template<typename T>
 	inline ByteReader<false>& op(ByteReader<false>& s, std::set<T>& set) {
 		uint32_t bytes;
@@ -48,7 +47,6 @@ namespace bitscpp {
 		}
 		return s;
 	}
-	
 	template<typename T>
 	inline ByteReader<false>& op(ByteReader<false>& s, std::unordered_set<T>& set) {
 		uint32_t bytes;
@@ -60,6 +58,33 @@ namespace bitscpp {
 		}
 		return s;
 	}
+
+	template<typename T>
+struct _impl_v2_reader<std::set<T>> {
+	static inline v2::ByteReader& op(v2::ByteReader& s, std::set<T>& set) {
+		uint32_t bytes;
+		s.op(bytes);
+		for(uint32_t i=0; i<bytes; ++i) {
+			T v;
+			s.op(v);
+			set.emplace_hint(set.end(), std::move(v));
+		}
+		return s;
+	}
+};
+	template<typename T>
+struct _impl_v2_reader<std::unordered_set<T>> {
+	static inline v2::ByteReader& op(v2::ByteReader& s, std::unordered_set<T>& set) {
+		uint32_t bytes;
+		s.op(bytes);
+		for(uint32_t i=0; i<bytes; ++i) {
+			T v;
+			s.op(v);
+			set.insert(std::move(v));
+		}
+		return s;
+	}
+};
 } // namespace bitscpp
 
 #endif

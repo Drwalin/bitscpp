@@ -25,6 +25,7 @@
  *
  * behavior should be similar to std::vector<uint8_t>
  */
+
 #ifndef BITSCPP_BYTE_WRITER_V2_BT_TYPE
 #define BITSCPP_BYTE_WRITER_V2_BT_TYPE std::vector<uint8_t>
 #endif
@@ -33,51 +34,61 @@
 #define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector
 #endif
 
-#define ByteWriter ByteWriter##BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
+#define BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT) LEFT ## RIGHT
+#define BITSCPP_CONCATENATE_NAMES(LEFT, RIGHT) BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT)
+
+#define ByteWriter BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
 namespace bitscpp
 {
 namespace v2
 {
-
-class ByteWriter;
-
-template <typename T> inline ByteWriter &op(ByteWriter &writer, const T &data)
-{
-	(*(T *)&data).__ByteStream_op(writer);
-	return writer;
+	class ByteWriter;
 }
 
+template <typename T>
+struct _impl_v2_writer {
+	static inline v2::ByteWriter &op(v2::ByteWriter &writer, const T &data)
+	{
+		(*(T *)&data).__ByteStream_op(writer);
+		return writer;
+	}
+};
+
+namespace v2
+{
 namespace impl
 {
-template <typename T>
-static inline ByteWriter &__op_ptr(ByteWriter &writer, T *const data)
-{
-	bitscpp::v2::op(writer, *data);
-	return writer;
-}
+	template <typename T>
+	static inline ByteWriter &__op_ptr(v2::ByteWriter &writer, T *const data)
+	{
+		return bitscpp::_impl_v2_writer<T>::op(writer, *data);
+	}
 
-template <typename T>
-static inline ByteWriter &__op_ref(ByteWriter &writer, const T &data)
-{
-	bitscpp::v2::op(writer, data);
-	return writer;
-}
+	template <typename T>
+	static inline ByteWriter &__op_ref(v2::ByteWriter &writer, const T &data)
+	{
+		return bitscpp::_impl_v2_writer<T>::op(writer, data);
+	}
 } // namespace impl
 
 class ByteWriter
 {
 public:
+	constexpr static int VERSION = 2;
+
 	using BT = BITSCPP_BYTE_WRITER_V2_BT_TYPE;
 
 	template <typename T> inline ByteWriter &op(T *const data)
 	{
+		return bitscpp::_impl_v2_writer<T>::op(*this, *data);
 		impl::__op_ptr(*this, data);
 		return *this;
 	}
 
 	template <typename T> inline ByteWriter &op(const T &data)
 	{
+		return bitscpp::_impl_v2_writer<T>::op(*this, data);
 		impl::__op_ref(*this, data);
 		return *this;
 	}
@@ -101,10 +112,15 @@ public:
 
 	ByteWriter &op_sized_string(const std::string &str);
 	ByteWriter &op_sized_string(const std::string_view str);
-	ByteWriter &op_sized_string(const char *str);
-	ByteWriter &op_sized_string(const char *str, uint32_t size);
-	ByteWriter &op_cstring(const char *str);
-	ByteWriter &op_cstring(const char *str, uint32_t size);
+	ByteWriter &op_sized_string(char const *str);
+	ByteWriter &op_sized_string(char const *str, uint32_t size);
+	ByteWriter &op_cstring(const std::string &str);
+	ByteWriter &op_cstring(const std::string_view str);
+	ByteWriter &op_cstring(char const *str);
+	ByteWriter &op_cstring(char const *str, uint32_t size);
+	ByteWriter &op(const std::string &str);
+	ByteWriter &op(const std::string_view str);
+	ByteWriter &op(const char *str);
 
 	// constant size byte array
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
@@ -143,13 +159,13 @@ public:
 	// map
 	ByteWriter &op_map_header(uint32_t elements);
 
-public:
-	ByteWriter &op_untyped_var_uint(uint64_t value);
+	//array
+	ByteWriter &op_array_header(uint32_t elements);
 
+	ByteWriter &op_untyped_var_uint(uint64_t value);
 	ByteWriter &op_untyped_var_int(int64_t value);
 
 public:
-	ByteWriter &op_array_header(uint32_t elements);
 
 	template <typename T>
 	inline ByteWriter &op(const T *data, uint32_t elements)

@@ -9,7 +9,7 @@ User is fully responsible for checking if stored data has correct type.
 
 ## Format V2
 
-[[ CURRENTLY NOT IMPLEMENTED ]]
+[[ CURRENTLY IN TESTING ]]
 
 In case of detecting incorrect type during deserialization, error flag is set
 and further deserialization should be stopped. If error flag is set then next

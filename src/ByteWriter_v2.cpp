@@ -12,7 +12,7 @@
 
 #include "../include/bitscpp/ByteWriter_v2.hpp"
 
-#define ByteWriter ByteWriter##BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
+#define ByteWriter BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
 namespace bitscpp
 {
@@ -64,6 +64,18 @@ ByteWriter &ByteWriter::op_cstring(const char *str, uint32_t size)
 	op_cstring_header();
 	_append((const uint8_t *)str, size + 1);
 	return *this;
+}
+ByteWriter &ByteWriter::op(const std::string &str)
+{
+	return op_sized_string(str);
+}
+ByteWriter &ByteWriter::op(const std::string_view str)
+{
+	return op_sized_string(str);
+}
+ByteWriter &ByteWriter::op(const char *str)
+{
+	return op_cstring(str);
 }
 
 ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)

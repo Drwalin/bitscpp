@@ -18,30 +18,33 @@ namespace bitscpp
 {
 namespace v2
 {
-
-class ByteReader;
-
-template <typename T> inline ByteReader &op(ByteReader &reader, T &data)
-{
-	data.__ByteStream_op(reader);
-	return reader;
+	class ByteReader;
 }
 
+template <typename T>
+struct _impl_v2_reader {
+	static inline v2::ByteReader &op(v2::ByteReader &reader, T &data)
+	{
+		data.__ByteStream_op(reader);
+		return reader;
+	}
+};
+
+namespace v2
+{
 namespace impl
 {
-template <typename T>
-static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
-{
-	op(reader, *data);
-	return reader;
-}
+	template <typename T>
+	static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
+	{
+		return _impl_v2_reader<T>::op(reader, *data);
+	}
 
-template <typename T>
-static inline ByteReader &__op_ref(ByteReader &reader, T &data)
-{
-	op(reader, data);
-	return reader;
-}
+	template <typename T>
+	static inline ByteReader &__op_ref(ByteReader &reader, T &data)
+	{
+		return _impl_v2_reader<T>::op(reader, data);
+	}
 } // namespace impl
 
 enum ByteReaderErrors : uint32_t {
@@ -53,14 +56,18 @@ enum ByteReaderErrors : uint32_t {
 class ByteReader
 {
 public:
+	constexpr static int VERSION = 2;
+
 	template <typename T> inline ByteReader &op(T *data)
 	{
+		return _impl_v2_reader<T>::op(*this, *data);
 		impl::__op_ptr(*this, data);
 		return *this;
 	}
 
 	template <typename T> inline ByteReader &op(T &data)
 	{
+		return _impl_v2_reader<T>::op(*this, data);
 		impl::__op_ref(*this, data);
 		return *this;
 	}
@@ -104,8 +111,14 @@ public:
 	ByteReader &op_sized_string(std::string &str);
 	ByteReader &op_sized_string(std::string_view &str);
 	ByteReader &op_sized_string(char const *&str, uint32_t &size);
+	ByteReader &op_cstring(std::string &str);
+	ByteReader &op_cstring(std::string_view &str);
 	ByteReader &op_cstring(const char *&str);
 	ByteReader &op_cstring(const char *&str, uint32_t &size);
+	ByteReader &op_any_string(std::string_view &str);
+	ByteReader &op(std::string &str);
+	ByteReader &op(std::string_view &str);
+	ByteReader &op(char const *&str);
 
 	// byte array
 	ByteReader &op_byte_array(uint8_t const *&data, uint32_t &bytes);
@@ -136,18 +149,16 @@ public:
 	ByteReader &op_bfloat(float &v);
 	ByteReader &op_float(float &v);
 	ByteReader &op_double(double &v);
-private:
 	static void _read_half(const uint8_t *ptr, float &v);
 	static void _read_bfloat(const uint8_t *ptr, float &v);
 	static void _read_float(const uint8_t *ptr, float &v);
 	static void _read_double(const uint8_t *ptr, double &v);
-public:
 	ByteReader &op(float &v);
 	ByteReader &op(double &v);
 
 	// map
 	ByteReader &op_map_header(uint32_t &elements);
-	
+
 	// array
 	ByteReader &op_array_header(uint32_t &elements);
 
@@ -155,9 +166,16 @@ public:
 	ByteReader &op_untyped_var_int(int64_t &v);
 
 public:
-	template <typename T, typename Te>
-	inline ByteReader &op(T *data, Te elements)
+	template <typename T>
+	inline ByteReader &op(T *data, const uint32_t elements)
 	{
+		uint32_t size;
+		op_array_header(size);
+		if (size != elements) {
+			[[unlikely]];
+			errors |= ERROR_TYPE_MISMATCH;
+			return *this;
+		}
 		for (uint32_t i = 0; i < elements; ++i)
 			op(data[i]);
 		return *this;
@@ -165,10 +183,12 @@ public:
 
 	template <typename T> inline ByteReader &op(std::vector<T> &arr)
 	{
-		uint32_t elems;
-		op(elems);
+		uint32_t elems = 0;
+		op_array_header(elems);
 		arr.resize(elems);
-		return op<T>(arr.data(), elems);
+		for (uint32_t i = 0; i < elems; ++i)
+			op(arr[i]);
+		return *this;
 	}
 
 	bool is_valid() const;
@@ -190,7 +210,7 @@ protected:
 	uint32_t errors;
 };
 
-}
+} // namespace v2
 } // namespace bitscpp
 
 #endif

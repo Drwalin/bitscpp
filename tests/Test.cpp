@@ -26,21 +26,24 @@ std::ostream& operator<<(std::ostream& s, std::vector<T> v) {
 	return s;
 }
 
+
+
+
 #pragma pack(push, 1)
 struct Struct {
 	Struct() {
 		clear();
 	}
-	
+
 	Struct& operator= (const Struct& other) {
 		memcpy(this, &other, sizeof(*this));
 		return *this;
 	}
-	
+
 	bool operator==(const Struct& other) const {
 		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str && str2 == other.str2 && is == other.is;
 	}
-	
+
 	int64_t bytes16;
 	int64_t bytes32;
 	int64_t bytes64;
@@ -71,7 +74,7 @@ struct Struct {
 	std::string str;
 	std::string str2;
 	std::vector<int> is;
-	
+
 	void cmp(Struct& s) {
 		std::cout << "\n\n";
 		std::cout << " bytes counts\n";
@@ -107,24 +110,43 @@ struct Struct {
 		std::cout << " vector<int>\n";
 		std::cout << "'"<<is << "'    '" << s.is << "'\n";
 	}
-	
+
 	template<typename S>
 	S& __ByteStream_op(S& s) {
-		s.op(bytes16, 1);
-		s.op(bytes32, 1);
-		s.op(bytes64, 1);
+		if constexpr (S::VERSION == 1) {
+			s.op(bytes16, 1);
+			s.op(bytes32, 1);
+			s.op(bytes64, 1);
+		} else {
+			s.op(bytes16);
+			s.op(bytes32);
+			s.op(bytes64);
+		}
 		
 		s.op(a8);
 		s.op(ua8);
-		s.op(a16, bytes16);
-		s.op(ua16, bytes16);
-		s.op(a32, bytes32);
-		s.op(ua32, bytes32);
-		s.op(a64, bytes64);
-		s.op(ua64, bytes64);
+		if constexpr (S::VERSION == 1) {
+			s.op(a16, bytes16);
+			s.op(ua16, bytes16);
+			s.op(a32, bytes32);
+			s.op(ua32, bytes32);
+			s.op(a64, bytes64);
+			s.op(ua64, bytes64);
+		} else {
+			s.op(a16);
+			s.op(ua16);
+			s.op(a32);
+			s.op(ua32);
+			s.op(a64);
+			s.op(ua64);
+		}
 		
 		s.op(str);
-		s.op_string_sized(str2, 4);
+		if constexpr (S::VERSION == 1) {
+			s.op_string_sized(str2, 4);
+		} else {
+			s.op_sized_string(str2);
+		}
 		
 		s.op(b8);
 		s.op(ub8);
@@ -143,7 +165,7 @@ struct Struct {
 		
 		return s;
 	}
-	
+
 	void clear() {
 		str.~basic_string();
 		str2.~basic_string();
@@ -156,7 +178,13 @@ struct Struct {
 };
 #pragma pack(pop)
 
-static uint64_t I = 1;
+
+
+
+template<typename ByteReader, typename ByteWriter>
+struct Test {
+
+uint64_t I = 1;
 void Random(void* ptr, uint32_t bytes) {
 	static uint64_t I = 1;
 	for(int i=0; i<bytes; ++i) {
@@ -246,10 +274,10 @@ void Random(Struct& s) {
 		T v = orig; \
 		std::cout << v << "  ==  "; \
 		std::vector<uint8_t> ____buffer; \
-		{ bitscpp::ByteWriter s(____buffer); \
+		{ ByteWriter s(____buffer); \
 		X;} \
 		v = 0; \
-		{ bitscpp::ByteReader s(____buffer.data(), ____buffer.size()); \
+		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X;} \
 		std::cout << v << "\n"; \
 }
@@ -258,10 +286,10 @@ void Random(Struct& s) {
 #define COMPARE(T, orig, value, X) { \
 		T v = orig; \
 		std::vector<uint8_t> ____buffer; \
-		{ bitscpp::ByteWriter s(____buffer); \
+		{ ByteWriter s(____buffer); \
 		X;} \
 		v = T(); \
-		{ bitscpp::ByteReader s(____buffer.data(), ____buffer.size()); \
+		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X;} \
 		if(v == value) { std::cout << " TRUE      "; correct++; \
 		} else { std::cout << " FALSE      "; incorrect++; } \
@@ -290,10 +318,10 @@ int main() {
 		s2.clear();
 		Random(s1);
 		
-		bitscpp::ByteWriter writer(buffer);
+		ByteWriter writer(buffer);
 		writer.op(s1);
 		
-		bitscpp::ByteReader reader(buffer.data(), buffer.size());
+		ByteReader reader(buffer.data(), buffer.size());
 		reader.op(s2);
 		
 		if(s1 == s2) {
@@ -309,13 +337,14 @@ int main() {
 	
 	std::cout << "\n\n\n\n";
 	
-
+	if constexpr (ByteReader::VERSION == 1) {
 	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
 	COMPARE(float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
 	COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
 	
 	COMPARE(float, -1, -1, s.op(v,-1,1,1));
 	COMPARE(float, 1, 1, s.op(v,-1,1,1));
+	}
 // 	COMPARE(float, 0, 0, s.op(v,-1,1,1));
 // 	COMPARE(float, -0.5, -0.5, s.op(v,-1,1,1));
 // 	COMPARE(float, 0.5, 0.5, s.op(v,-1,1,1));
@@ -363,5 +392,15 @@ int main() {
 	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
 	
 	return 0;
+}
+};
+
+int main() {
+	printf("bitscpp::v1:\n");
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
+	
+	printf("bitscpp::v2:\n");
+#define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+	Test<bitscpp::v2::ByteReader, ByteWriter_v2>{}.main();
 }
 
