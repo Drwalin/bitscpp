@@ -66,6 +66,24 @@ void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
 }
 uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 {
+	uint64_t const *a = (uint64_t const *)(((intptr_t)buffer) & (~7lu));
+	uint64_t va = *a;
+	
+	uint64_t const *b = (uint64_t const *)(((intptr_t)buffer + bytes - 1) & (~7lu));
+	uint64_t vb = *b;
+	
+	int off1 = (buffer - (uint8_t const *)a) << 3;
+	int off2 = ((uint8_t const *)b - buffer) << 3;
+	
+	uint64_t v = (va >> off1) | (vb << off2);
+	
+	v &= (~0lu) >> (64 - (bytes << 3));
+	
+	return NetworkToHostUint(v);
+	
+	
+	
+	
 	assert(bytes > 0 && bytes <= 8);
 	uint64_t value = 0;
 	uint8_t const *end = buffer - 1;
