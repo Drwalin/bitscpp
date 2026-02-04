@@ -121,6 +121,7 @@ public:
 
 	// byte array
 	ByteReader &op_byte_array(uint8_t const *&data, uint32_t &bytes);
+	ByteReader &op_byte_array(std::vector<uint8_t> &data);
 	ByteReader &op(std::vector<uint8_t> &data);
 
 	// miscelanous

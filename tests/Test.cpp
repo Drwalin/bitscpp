@@ -439,12 +439,12 @@ int main() {
 	TestNetworkOrder();
 	
 	printf("\n\n");
-	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
-	
-	printf("\n\n");
 	printf("bitscpp::v2:\n");
 #define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 	Test<bitscpp::v2::ByteReader, ByteWriter_v2>{}.main();
+	
+	printf("\n\n");
+	printf("bitscpp::v1:\n");
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
 }
 

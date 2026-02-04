@@ -85,9 +85,13 @@ ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
 	_append(data, bytes);
 	return *this;
 }
-ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
+ByteWriter &ByteWriter::op_byte_array(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data.data(), data.size());
+}
+ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
+{
+	return op_byte_array(data);
 }
 
 ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
@@ -123,6 +127,7 @@ ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op_int(int64_t v)
 {
 	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
+		[[likely]];
 		v -= IMMEDIATE_INTEGER_VALUE_MIN;
 		assert(v >= 0 && v <= IMMEDIATE_INTEGER_MAX);
 		_append_byte((uint8_t)(uint64_t)v);
@@ -131,6 +136,7 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
 		const int bits = std::bit_width(uv);
 		if (bits <= 12) {
+			[[likely]];
 			const uint64_t low = uv & 0xF;
 			const uint64_t high = uv >> 4;
 			assert(low < 16);
@@ -145,11 +151,9 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 			assert(bytes <= 8);
 			ptr[offset] = BEG_SIZED_INTEGER + bytes - 2;
 			assert(ptr[offset] >= BEG_SIZED_INTEGER &&
-				   ptr[offset] <= END_SIZED_INTEGER);
+					ptr[offset] <= END_SIZED_INTEGER);
 			offset++;
-			
 			WriteBytesInNetworkOrder(ptr+offset, uv, bytes);
-			assert(ptr[offset-1] != 0);
 		}
 	}
 	return *this;
@@ -176,8 +180,8 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 
 	if (exponent == exponentMask) {
 		[[unlikely]];
-		ptr[offset + 1] = fraction == 0 ? 0x80 : 0xFF;
 		ptr[offset] = BEG_BFLOAT;
+		ptr[offset + 1] = fraction == 0 ? 0x80 : 0xFF;
 		ptr[offset + 2] = 0x7F;
 		return *this;
 	} else {
@@ -222,11 +226,11 @@ ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 {
 	_reserve_expand(10);
-	if (elements <= 17) { // size embeded in header
+	if (elements <= IMMEDIATE_ARRAY_MAX_SIZE) { // size embeded in header
 		_append_byte(BEG_ARRAY_IMMEDIATE_SIZED + elements);
 	} else { // size in following VAR_INT+17
 		_append_byte(BEG_ARRAY_VAR_SIZED);
-		op_untyped_var_uint(elements - 18);
+		op_untyped_var_uint(elements - IMMEDIATE_ARRAY_MAX_SIZE - 1);
 	}
 	return *this;
 }
@@ -235,10 +239,12 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 {
 	if (value <= 0x7F) {
 		uint8_t byte = (uint8_t)value;
-		_append(&byte, 1);
+		_append_byte(byte);
 	} else {
+		constexpr uint8_t _bytes[] = {0,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,5,5,5,5,6,6,6,6,6,6,6,7,7,7,7,7,7,7,8,8,8,8,8,8,8,9,9,9,9,9,9,9};
 		const uint32_t bits = std::bit_width(value);
-		const uint32_t bytes = (bits + 6) / 7;
+		const uint32_t bytes = _bytes[bits];
+		assert(bytes == (bits + 6) / 7);
 
 		constexpr uint8_t masks[] = {0x00, 0x7F, 0x3F, 0x1F, 0x0F,
 									 0x07, 0x03, 0x01, 0x00, 0x00};

@@ -237,7 +237,7 @@ ByteReader &ByteReader::op_byte_array(uint8_t const *&data, uint32_t &bytes)
 {
 	return op_sized_string(*(char const **)&data, bytes);
 }
-ByteReader &ByteReader::op(std::vector<uint8_t> &data)
+ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 {
 	uint32_t bytes = 0;
 	op_sized_byte_array_header(bytes);
@@ -245,6 +245,10 @@ ByteReader &ByteReader::op(std::vector<uint8_t> &data)
 	memcpy(data.data(), ptr, bytes);
 	ptr += bytes;
 	return *this;
+}
+ByteReader &ByteReader::op(std::vector<uint8_t> &data)
+{
+	return op_byte_array(data);
 }
 
 // miscelanous

@@ -125,6 +125,7 @@ public:
 
 	// constant size byte array
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
+	ByteWriter &op_byte_array(const std::vector<uint8_t> &data);
 	ByteWriter &op(const std::vector<uint8_t> &data);
 
 	// miscelanous

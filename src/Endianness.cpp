@@ -4,7 +4,6 @@
 // You should have received a copy of the MIT License along with this program.
 
 #include <cassert>
-#include <cstring>
 #include <cstdint>
 
 #include <bit>
@@ -44,38 +43,37 @@ uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
 void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 8);
-	value = HostToNetworkUint(value);
-	memcpy(buffer, &value, bytes);
-	// for (int i=0; i<bytes; ++i, ++buffer, value >>= 8) {
-	// 	*buffer = value & 0xFF;
-	// }
+	uint8_t *end = buffer + bytes;
+	for (; buffer != end; ++buffer, value >>= 8) {
+		*buffer = value; 
+	}
 }
 void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 4);
-	value = HostToNetworkUint(value);
-	memcpy(buffer, &value, bytes);
-	// for (int i=0; i<bytes; ++i, ++buffer, value >>= 8) {
-	// 	*buffer = value & 0xFF;
-	// }
+	uint8_t *end = buffer + bytes;
+	for (; buffer != end; ++buffer, value >>= 8) {
+		*buffer = value; 
+	}
 }
 void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 2);
-	value = HostToNetworkUint(value);
-	memcpy(buffer, &value, bytes);
-	// for (int i=0; i<bytes; ++i, ++buffer, value >>= 8) {
-	// 	*buffer = value & 0xFF;
-	// }
+	uint8_t *end = buffer + bytes;
+	for (; buffer != end; ++buffer, value >>= 8) {
+		*buffer = value;
+	}
 }
-uint64_t ReadBytesInNetworkOrder(const uint8_t *buffer, int bytes)
+uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 {
 	assert(bytes > 0 && bytes <= 8);
 	uint64_t value = 0;
-	memcpy(&value, buffer, bytes);
-	// for (int i=0; i<bytes; ++i, ++buffer, value >>= 8) {
-	// 	*buffer = value & 0xFF;
-	// }
-	return NetworkToHostUint(value);
+	uint8_t const *end = buffer - 1;
+	buffer = end + bytes;
+	for (; buffer != end; --buffer) {
+		value <<= 8;
+		value |= *buffer;
+	}
+	return value;
 }
 } // namespace bitscpp
