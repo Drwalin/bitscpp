@@ -109,7 +109,7 @@ struct Struct {
 		std::cout << "'"<<str  << "'    '" << s.str  << "'\n";
 		std::cout << "'"<<str2 << "'    '" << s.str2 << "'\n";
 		std::cout << " vector<int>\n";
-		std::cout << "'"<<is << "'    '" << s.is << "'\n";
+		std::cout << "'"<<is << "'\n'" << s.is << "'\n";
 	}
 
 	template<typename S>
@@ -291,7 +291,9 @@ void Random(Struct& s) {
 		X;} \
 		v = T(); \
 		{ ByteReader s(____buffer.data(), ____buffer.size()); \
-		X;} \
+		X; \
+		if (s.is_valid()) { correct++; } else { std::cout << " READING BUFFER ERROR\n"; incorrect++; } \
+		} \
 		if(v == value) { std::cout << " TRUE      "; correct++; \
 		} else { std::cout << " FALSE      "; incorrect++; } \
 		std::cout << value << "  ==  " << v << "\n"; \
@@ -332,19 +334,28 @@ int main() {
 		}
 		
 		printf(" equality: %i -> %s\n", i, s1==s2 ? "true" : "false");
-// 		s1.cmp(s2);
+		if (ByteWriter::VERSION == 2) {
+// 			s1.cmp(s2);
+		}
 	}
 	}
 	
 	std::cout << "\n\n\n\n";
 	
 	if constexpr (ByteReader::VERSION == 1) {
-	COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
-	COMPARE(float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
-	COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
-	
-	COMPARE(float, -1, -1, s.op(v,-1,1,1));
-	COMPARE(float, 1, 1, s.op(v,-1,1,1));
+		COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
+		COMPARE(float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
+		COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
+
+		COMPARE(float, -1, -1, s.op(v,-1,1,1));
+		COMPARE(float, 1, 1, s.op(v,-1,1,1));
+	} else {
+		COMPARE(float, 73.0f, 73.0f, s.op(v));
+		COMPARE(float, 500.0f, 500.0f, s.op(v));
+		COMPARE(float, 123.23456f, 123.23456f, s.op(v));
+
+		COMPARE(float, -1, -1, s.op_half(v));
+		COMPARE(float, 1, 1, s.op_half(v));
 	}
 // 	COMPARE(float, 0, 0, s.op(v,-1,1,1));
 // 	COMPARE(float, -0.5, -0.5, s.op(v,-1,1,1));

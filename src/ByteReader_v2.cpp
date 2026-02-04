@@ -375,10 +375,6 @@ ByteReader &ByteReader::op(char &v)
 ByteReader &ByteReader::op_uint(uint64_t &v) { return op_int((int64_t &)v); }
 ByteReader &ByteReader::op_int(int64_t &v)
 {
-	static int CTR = 0;
-	++CTR;
-// 	printf("READ CTR = %i\n", CTR);
-	
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
 		errors |= ERROR_BUFFER_TOO_SMALL;
@@ -415,14 +411,10 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		return *this;
 	}
 	
-	uint64_t uv = vv;
-	
 	const uint64_t sign = vv & 1;
 	const uint64_t abs = vv >> 1;
 	vv = sign ? ~abs : abs;
 	v = vv;
-	
-// 	printf("%16.16lX <- %16.16lX\n", v, uv);
 	
 	return *this;
 }
@@ -500,45 +492,46 @@ ByteReader &ByteReader::op(float &v)
 		return *this;
 	}
 	const uint8_t header = *ptr;
+	++ptr;
 	double d;
-	switch (header - BEG_FLOATS) {
-	case BEG_HALF - BEG_FLOATS:
-		if (has_bytes_to_read(3) == false) {
+	switch (header) {
+	case BEG_HALF:
+		if (has_bytes_to_read(2) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		_read_half(ptr + 1, v);
-		ptr += 3;
+		_read_half(ptr, v);
+		ptr += 2;
 		break;
-	case BEG_BFLOAT - BEG_FLOATS:
-		if (has_bytes_to_read(3) == false) {
+	case BEG_BFLOAT:
+		if (has_bytes_to_read(2) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		_read_bfloat(ptr + 1, v);
-		ptr += 3;
+		_read_bfloat(ptr, v);
+		ptr += 2;
 		break;
-	case BEG_FLOAT - BEG_FLOATS:
-		if (has_bytes_to_read(5) == false) {
+	case BEG_FLOAT:
+		if (has_bytes_to_read(4) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		_read_float(ptr + 1, v);
-		ptr += 3;
+		_read_float(ptr, v);
+		ptr += 4;
 		break;
-	case BEG_DOUBLE - BEG_FLOATS:
-		if (has_bytes_to_read(9) == false) {
+	case BEG_DOUBLE:
+		if (has_bytes_to_read(8) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
 		d = v;
-		_read_double(ptr + 1, d);
+		_read_double(ptr, d);
 		v = d;
-		ptr += 9;
+		ptr += 8;
 		break;
 	default:
 		[[unlikely]];
@@ -555,49 +548,50 @@ ByteReader &ByteReader::op(double &v)
 		return *this;
 	}
 	const uint8_t header = *ptr;
+	++ptr;
 	float f;
-	switch (header - BEG_FLOATS) {
-	case BEG_HALF - BEG_FLOATS:
-		if (has_bytes_to_read(3) == false) {
+	switch (header) {
+	case BEG_HALF:
+		if (has_bytes_to_read(2) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
 		f = v;
-		_read_half(ptr + 1, f);
+		_read_half(ptr, f);
 		v = f;
-		ptr += 3;
+		ptr += 2;
 		break;
-	case BEG_BFLOAT - BEG_FLOATS:
-		if (has_bytes_to_read(3) == false) {
+	case BEG_BFLOAT:
+		if (has_bytes_to_read(2) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
 		f = v;
-		_read_bfloat(ptr + 1, f);
+		_read_bfloat(ptr, f);
 		v = f;
-		ptr += 3;
+		ptr += 2;
 		break;
-	case BEG_FLOAT - BEG_FLOATS:
-		if (has_bytes_to_read(5) == false) {
+	case BEG_FLOAT:
+		if (has_bytes_to_read(4) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
 		f = v;
-		_read_float(ptr + 1, f);
+		_read_float(ptr, f);
 		v = f;
-		ptr += 3;
+		ptr += 4;
 		break;
-	case BEG_DOUBLE - BEG_FLOATS:
-		if (has_bytes_to_read(9) == false) {
+	case BEG_DOUBLE:
+		if (has_bytes_to_read(8) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		_read_double(ptr + 1, v);
-		ptr += 9;
+		_read_double(ptr, v);
+		ptr += 8;
 		break;
 	default:
 		[[unlikely]];
@@ -619,7 +613,7 @@ void ByteReader::_read_bfloat(const uint8_t *ptr, float &v)
 void ByteReader::_read_float(const uint8_t *ptr, float &v)
 {
 	const uint32_t vv = ReadBytesInNetworkOrder(ptr, 4);
-	v = *(float *)&vv;
+	v = *(const float *)&vv;
 }
 void ByteReader::_read_double(const uint8_t *ptr, double &v)
 {

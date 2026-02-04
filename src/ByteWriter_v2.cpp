@@ -119,19 +119,9 @@ ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op(char v) { return op_int(v); }
 
-void BREAKPOINT() {}
-
 ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op_int(int64_t v)
 {
-	static int CTR = 0;
-	++CTR;
-// 	printf("WRITE CTR = %i\n", CTR);
-	
-	if (CTR == 110) {
-// 		BREAKPOINT();
-	}
-	
 	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
 		v -= IMMEDIATE_INTEGER_VALUE_MIN;
 		assert(v >= 0 && v <= IMMEDIATE_INTEGER_MAX);
@@ -139,9 +129,6 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 	} else {
 		uint64_t uv = (uint64_t)v;
 		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
-		
-// 		printf("%16.16lX -> %16.16lX\n", v, uv);
-		
 		const int bits = std::bit_width(uv);
 		if (bits <= 12) {
 			const uint64_t low = uv & 0xF;
@@ -163,17 +150,12 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 			
 			WriteBytesInNetworkOrder(ptr+offset, uv, bytes);
 			assert(ptr[offset-1] != 0);
-			
-// 			for (int i = 0; i < bytes; ++i, ++offset, uv >>= 8) {
-// 				ptr[offset] = uv & 0xFF;
-// 				assert(uv > 0);
-// 			}
-// 			assert(uv == 0);
 		}
 	}
 	return *this;
 }
 
+// floats
 ByteWriter &ByteWriter::op_half(float value)
 {
 	uint32_t offset = _expand(3);
@@ -212,15 +194,15 @@ ByteWriter &ByteWriter::op_float(float value)
 {
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
 	uint32_t offset = _expand(5);
-	ptr[offset] = BEG_BFLOAT;
+	ptr[offset] = BEG_FLOAT;
 	WriteBytesInNetworkOrder(ptr + offset + 1, bv32, 4);
 	return *this;
 }
 ByteWriter &ByteWriter::op_double(double value)
 {
 	const uint64_t bv64 = std::bit_cast<uint64_t>(value);
-	uint32_t offset = _expand(5);
-	ptr[offset] = BEG_BFLOAT;
+	uint32_t offset = _expand(9);
+	ptr[offset] = BEG_DOUBLE;
 	WriteBytesInNetworkOrder(ptr + offset + 1, bv64, 8);
 	return *this;
 }
