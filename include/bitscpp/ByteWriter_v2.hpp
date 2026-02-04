@@ -34,23 +34,24 @@
 #define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector
 #endif
 
-#define BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT) LEFT ## RIGHT
-#define BITSCPP_CONCATENATE_NAMES(LEFT, RIGHT) BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT)
+#define BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT) LEFT##RIGHT
+#define BITSCPP_CONCATENATE_NAMES(LEFT, RIGHT)                                 \
+	BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT)
 
-#define ByteWriter BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+#define ByteWriter                                                             \
+	BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
 namespace bitscpp
 {
 namespace v2
 {
-	class ByteWriter;
+class ByteWriter;
 }
 
-template <typename T>
-struct _impl_v2_writer {
+template <typename T> struct _impl_v2_writer {
 	static inline v2::ByteWriter &op(v2::ByteWriter &writer, const T &data)
 	{
-		(*(T *)&data).__ByteStream_op(writer);
+		((T &)data).__ByteStream_op(writer);
 		return writer;
 	}
 };
@@ -59,17 +60,17 @@ namespace v2
 {
 namespace impl
 {
-	template <typename T>
-	static inline ByteWriter &__op_ptr(v2::ByteWriter &writer, T *const data)
-	{
-		return bitscpp::_impl_v2_writer<T>::op(writer, *data);
-	}
+template <typename T>
+static inline ByteWriter &__op_ptr(v2::ByteWriter &writer, T *const data)
+{
+	return bitscpp::_impl_v2_writer<T>::op(writer, *data);
+}
 
-	template <typename T>
-	static inline ByteWriter &__op_ref(v2::ByteWriter &writer, const T &data)
-	{
-		return bitscpp::_impl_v2_writer<T>::op(writer, data);
-	}
+template <typename T>
+static inline ByteWriter &__op_ref(v2::ByteWriter &writer, const T &data)
+{
+	return bitscpp::_impl_v2_writer<T>::op(writer, data);
+}
 } // namespace impl
 
 class ByteWriter
@@ -159,14 +160,13 @@ public:
 	// map
 	ByteWriter &op_map_header(uint32_t elements);
 
-	//array
+	// array
 	ByteWriter &op_array_header(uint32_t elements);
 
 	ByteWriter &op_untyped_var_uint(uint64_t value);
 	ByteWriter &op_untyped_var_int(int64_t value);
 
 public:
-
 	template <typename T>
 	inline ByteWriter &op(const T *data, uint32_t elements)
 	{

@@ -119,9 +119,19 @@ ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op(char v) { return op_int(v); }
 
+void BREAKPOINT() {}
+
 ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
 ByteWriter &ByteWriter::op_int(int64_t v)
 {
+	static int CTR = 0;
+	++CTR;
+// 	printf("WRITE CTR = %i\n", CTR);
+	
+	if (CTR == 110) {
+// 		BREAKPOINT();
+	}
+	
 	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
 		v -= IMMEDIATE_INTEGER_VALUE_MIN;
 		assert(v >= 0 && v <= IMMEDIATE_INTEGER_MAX);
@@ -129,6 +139,9 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 	} else {
 		uint64_t uv = (uint64_t)v;
 		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
+		
+// 		printf("%16.16lX -> %16.16lX\n", v, uv);
+		
 		const int bits = std::bit_width(uv);
 		if (bits <= 12) {
 			const uint64_t low = uv & 0xF;
@@ -141,15 +154,21 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 		} else {
 			const int bytes = (bits + 7) >> 3;
 			uint32_t offset = _expand(bytes + 1);
+			assert(bytes >= 2);
+			assert(bytes <= 8);
 			ptr[offset] = BEG_SIZED_INTEGER + bytes - 2;
 			assert(ptr[offset] >= BEG_SIZED_INTEGER &&
 				   ptr[offset] <= END_SIZED_INTEGER);
 			offset++;
-			for (int i = 0; i < bytes; ++i, ++offset, uv >>= 8) {
-				ptr[offset] = uv & 0xFF;
-				assert(uv > 0);
-			}
-			assert(uv == 0);
+			
+			WriteBytesInNetworkOrder(ptr+offset, uv, bytes);
+			assert(ptr[offset-1] != 0);
+			
+// 			for (int i = 0; i < bytes; ++i, ++offset, uv >>= 8) {
+// 				ptr[offset] = uv & 0xFF;
+// 				assert(uv > 0);
+// 			}
+// 			assert(uv == 0);
 		}
 	}
 	return *this;
@@ -222,7 +241,7 @@ ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 {
 	_reserve_expand(10);
 	if (elements <= 17) { // size embeded in header
-		_append_byte(BEG_ARRAY_IMMEDIATE_SIZED + elements - 1);
+		_append_byte(BEG_ARRAY_IMMEDIATE_SIZED + elements);
 	} else { // size in following VAR_INT+17
 		_append_byte(BEG_ARRAY_VAR_SIZED);
 		op_untyped_var_uint(elements - 18);

@@ -18,11 +18,10 @@ namespace bitscpp
 {
 namespace v2
 {
-	class ByteReader;
+class ByteReader;
 }
 
-template <typename T>
-struct _impl_v2_reader {
+template <typename T> struct _impl_v2_reader {
 	static inline v2::ByteReader &op(v2::ByteReader &reader, T &data)
 	{
 		data.__ByteStream_op(reader);
@@ -34,17 +33,17 @@ namespace v2
 {
 namespace impl
 {
-	template <typename T>
-	static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
-	{
-		return _impl_v2_reader<T>::op(reader, *data);
-	}
+template <typename T>
+static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
+{
+	return _impl_v2_reader<T>::op(reader, *data);
+}
 
-	template <typename T>
-	static inline ByteReader &__op_ref(ByteReader &reader, T &data)
-	{
-		return _impl_v2_reader<T>::op(reader, data);
-	}
+template <typename T>
+static inline ByteReader &__op_ref(ByteReader &reader, T &data)
+{
+	return _impl_v2_reader<T>::op(reader, data);
+}
 } // namespace impl
 
 enum ByteReaderErrors : uint32_t {

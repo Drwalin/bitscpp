@@ -1,4 +1,5 @@
 
+#include "bitscpp/Endianness.hpp"
 #include <bitscpp/ByteWriterExtensions.hpp>
 #include <bitscpp/ByteReaderExtensions.hpp>
 
@@ -395,10 +396,42 @@ int main() {
 }
 };
 
+void TestNetworkOrder() {
+	auto t = [](const uint64_t value) {
+		constexpr uint64_t sizes[9] = {0x0lu, 0xFFlu, 0xFFFFlu, 0xFFFFFFlu, 0xFFFFFFFFlu, 0xFFFFFFFFFFlu, 0xFFFFFFFFFFFFlu, 0xFFFFFFFFFFFFFFlu, 0xFFFFFFFFFFFFFFFFlu};
+		for (int bytes=1; bytes<=8; ++bytes) {
+			if (value <= sizes[bytes]) {
+				uint8_t buffer[64] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
+				bitscpp::WriteBytesInNetworkOrder(buffer, value, bytes);
+				const uint64_t v = bitscpp::ReadBytesInNetworkOrder(buffer, bytes);
+				printf(" [bytes=%i]  %16lX == %16lX . . .", bytes, value, v);
+				if (v != value) {
+					printf("              FAILED ! ! !\n");
+				} else {
+					printf(" SUCCESS\n");
+				}
+			}
+		}
+	};
+	t(0x10);
+	t(0x2010);
+	t(0x302010);
+	t(0x40302010);
+	t(0x5040302010);
+	t(0x605040302010);
+	t(0x70605040302010);
+	t(0x8070605040302010);
+}
+
 int main() {
+	printf("bitscpp::network order:\n");
+	TestNetworkOrder();
+	
+	printf("\n\n");
 	printf("bitscpp::v1:\n");
 	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
 	
+	printf("\n\n");
 	printf("bitscpp::v2:\n");
 #define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 	Test<bitscpp::v2::ByteReader, ByteWriter_v2>{}.main();

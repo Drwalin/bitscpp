@@ -372,9 +372,13 @@ ByteReader &ByteReader::op(char &v)
 	return *this;
 }
 
-ByteReader &ByteReader::op_uint(uint64_t &v) { return op_int(*(int64_t *)&v); }
+ByteReader &ByteReader::op_uint(uint64_t &v) { return op_int((int64_t &)v); }
 ByteReader &ByteReader::op_int(int64_t &v)
 {
+	static int CTR = 0;
+	++CTR;
+// 	printf("READ CTR = %i\n", CTR);
+	
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
 		errors |= ERROR_BUFFER_TOO_SMALL;
@@ -382,17 +386,44 @@ ByteReader &ByteReader::op_int(int64_t &v)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
+	uint64_t vv = 0;
 	if (header <= END_IMMEDIATE_INTEGER) {
-		static_assert(false && "TODO");
+		v = header + IMMEDIATE_INTEGER_VALUE_MIN;
+		return *this;
 	} else if (header <= END_12B_INTEGER) {
-		static_assert(false && "TODO");
+		if (has_bytes_to_read(1) == false) {
+			[[unlikely]];
+			errors |= ERROR_BUFFER_TOO_SMALL;
+			return *this;
+		}
+		const uint8_t secondByte = *ptr;
+		++ptr;
+		vv = ((uint64_t)secondByte) << 4;
+		vv |= ((uint64_t)(header - BEG_12B_INTEGER));
 	} else if (header <= END_SIZED_INTEGER) {
-		static_assert(false && "TODO");
+		int bytes = header - BEG_SIZED_INTEGER + 2;
+		if (has_bytes_to_read(bytes) == false) {
+			[[unlikely]];
+			errors |= ERROR_BUFFER_TOO_SMALL;
+			return *this;
+		}
+		vv = ReadBytesInNetworkOrder(ptr, bytes);
+		ptr += bytes;
 	} else {
 		[[unlikely]];
 		errors |= ERROR_TYPE_MISMATCH;
 		return *this;
 	}
+	
+	uint64_t uv = vv;
+	
+	const uint64_t sign = vv & 1;
+	const uint64_t abs = vv >> 1;
+	vv = sign ? ~abs : abs;
+	v = vv;
+	
+// 	printf("%16.16lX <- %16.16lX\n", v, uv);
+	
 	return *this;
 }
 
@@ -638,7 +669,7 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 		elements = 0;
 	} else if (header <= END_ARRAY_IMMEDIATE_SIZED) {
 		[[likely]];
-		elements = header - IMMEDIATE_ARRAY_MAX_SIZE;
+		elements = header - BEG_ARRAY_IMMEDIATE_SIZED;
 	} else if (header == BEG_ARRAY_VAR_SIZED) {
 		uint64_t size = 0;
 		op_untyped_var_uint(size);
