@@ -20,9 +20,9 @@ if(BITSCPP_BUILD_TEST)
 	aux_source_directory(./include/bitscpp header_files)
 	aux_source_directory(./tests test_source_files)
 	
-	add_executable(test
+	add_executable(test_bitscpp
 		${header_files}
 		${test_source_files}
 	)
-	target_link_libraries(test bitscpp)
+	target_link_libraries(test_bitscpp bitscpp)
 endif()
