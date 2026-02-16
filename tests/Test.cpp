@@ -1,11 +1,14 @@
 
-#include "bitscpp/Endianness.hpp"
-#include <bitscpp/ByteWriterExtensions.hpp>
-#include <bitscpp/ByteReaderExtensions.hpp>
+#include "../include/bitscpp/VectorWrapper.hpp"
+#include "../include/bitscpp/Endianness.hpp"
+#include "../include/bitscpp/ByteWriterExtensions.hpp"
+#include "../include/bitscpp/ByteReaderExtensions.hpp"
 
 #include <iostream>
 
 #include <cstdio>
+
+uint64_t totalErrors = 0;
 
 template<typename T>
 std::ostream& operator<<(std::ostream& s, std::set<T> v) {
@@ -38,6 +41,10 @@ struct Struct {
 
 	Struct& operator= (const Struct& other) {
 		memcpy(this, &other, sizeof(*this));
+		memcpy(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16);
+		str = other.str;
+		str2 = other.str2;
+		is = other.is;
 		return *this;
 	}
 
@@ -274,9 +281,10 @@ void Random(Struct& s) {
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
-		std::vector<uint8_t> ____buffer; \
+		bitscpp::VectorWrapper ____buffer; \
 		{ ByteWriter s(____buffer); \
-		X;} \
+		X;\
+		} \
 		v = 0; \
 		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X;} \
@@ -286,9 +294,10 @@ void Random(Struct& s) {
 
 #define COMPARE(T, orig, value, X) { \
 		T v = orig; \
-		std::vector<uint8_t> ____buffer; \
+		bitscpp::VectorWrapper ____buffer; \
 		{ ByteWriter s(____buffer); \
-		X;} \
+		X;\
+		} \
 		v = T(); \
 		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X; \
@@ -309,9 +318,10 @@ int main() {
 	int correct = 0, incorrect = 0;
 	
 	{
-	std::vector<uint8_t> buffer;
+	bitscpp::VectorWrapper buffer;
 	
 	for(int i=0; i<16; ++i) {
+		memset(buffer.data(), 0, buffer.size());
 		buffer.resize(10000);
 		Random((void*)buffer.data(), buffer.size());
 		buffer.clear();
@@ -403,6 +413,8 @@ int main() {
 	
 	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
 	
+	totalErrors += incorrect;
+	
 	return 0;
 }
 };
@@ -418,6 +430,7 @@ void TestNetworkOrder() {
 				printf(" [bytes=%i]  %16lX == %16lX . . .", bytes, value, v);
 				if (v != value) {
 					printf("              FAILED ! ! !\n");
+					totalErrors++;
 				} else {
 					printf(" SUCCESS\n");
 				}
@@ -445,6 +458,8 @@ int main() {
 	
 	printf("\n\n");
 	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	
+	return totalErrors ? 1 : 0;
 }
 

@@ -31,20 +31,6 @@ template <typename T> struct _impl_v2_reader {
 
 namespace v2
 {
-namespace impl
-{
-template <typename T>
-static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
-{
-	return _impl_v2_reader<T>::op(reader, *data);
-}
-
-template <typename T>
-static inline ByteReader &__op_ref(ByteReader &reader, T &data)
-{
-	return _impl_v2_reader<T>::op(reader, data);
-}
-} // namespace impl
 
 enum ByteReaderErrors : uint32_t {
 	ERROR_OK = 0,
@@ -57,18 +43,9 @@ class ByteReader
 public:
 	constexpr static int VERSION = 2;
 
-	template <typename T> inline ByteReader &op(T *data)
-	{
-		return _impl_v2_reader<T>::op(*this, *data);
-		impl::__op_ptr(*this, data);
-		return *this;
-	}
-
 	template <typename T> inline ByteReader &op(T &data)
 	{
 		return _impl_v2_reader<T>::op(*this, data);
-		impl::__op_ref(*this, data);
-		return *this;
 	}
 
 public:

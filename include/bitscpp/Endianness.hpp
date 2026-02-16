@@ -3,6 +3,7 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
 #ifndef BITSCPP_ENDIANNESS_HPP
 #define BITSCPP_ENDIANNESS_HPP
 
@@ -40,5 +41,7 @@ void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes);
 void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes);
 uint64_t ReadBytesInNetworkOrder(const uint8_t *buffer, int bytes);
 } // namespace bitscpp
+
+#include "../../src/Endianness.inl.hpp"
 
 #endif

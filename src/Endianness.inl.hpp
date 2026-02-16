@@ -3,6 +3,10 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
+#ifndef BITSCPP_ENDIANNESS_INL_HPP
+#define BITSCPP_ENDIANNESS_INL_HPP
+
 #include <cassert>
 #include <cstdint>
 
@@ -12,22 +16,22 @@
 
 namespace bitscpp
 {
-uint8_t HostToNetworkUint(uint8_t v) { return v; }
-uint16_t HostToNetworkUint(uint16_t v)
+inline uint8_t HostToNetworkUint(uint8_t v) { return v; }
+inline uint16_t HostToNetworkUint(uint16_t v)
 {
 	if constexpr (Endian::little)
 		return v;
 	else
 		return std::byteswap<uint16_t>(v);
 }
-uint32_t HostToNetworkUint(uint32_t v)
+inline uint32_t HostToNetworkUint(uint32_t v)
 {
 	if constexpr (Endian::little)
 		return v;
 	else
 		return std::byteswap<uint32_t>(v);
 }
-uint64_t HostToNetworkUint(uint64_t v)
+inline uint64_t HostToNetworkUint(uint64_t v)
 {
 	if constexpr (Endian::little)
 		return v;
@@ -35,12 +39,12 @@ uint64_t HostToNetworkUint(uint64_t v)
 		return std::byteswap<uint64_t>(v);
 }
 
-uint8_t NetworkToHostUint(uint8_t v) { return HostToNetworkUint(v); }
-uint16_t NetworkToHostUint(uint16_t v) { return HostToNetworkUint(v); }
-uint32_t NetworkToHostUint(uint32_t v) { return HostToNetworkUint(v); }
-uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
+inline uint8_t NetworkToHostUint(uint8_t v) { return HostToNetworkUint(v); }
+inline uint16_t NetworkToHostUint(uint16_t v) { return HostToNetworkUint(v); }
+inline uint32_t NetworkToHostUint(uint32_t v) { return HostToNetworkUint(v); }
+inline uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
 
-void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
+inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 8);
 	uint8_t *end = buffer + bytes;
@@ -48,7 +52,7 @@ void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 		*buffer = value; 
 	}
 }
-void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
+inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 4);
 	uint8_t *end = buffer + bytes;
@@ -56,7 +60,7 @@ void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
 		*buffer = value; 
 	}
 }
-void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
+inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 2);
 	uint8_t *end = buffer + bytes;
@@ -64,7 +68,7 @@ void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
 		*buffer = value;
 	}
 }
-uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
+inline uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 {
 	uint64_t const *a = (uint64_t const *)(((intptr_t)buffer) & (~7lu));
 	uint64_t va = *a;
@@ -95,3 +99,5 @@ uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 	return value;
 }
 } // namespace bitscpp
+
+#endif
