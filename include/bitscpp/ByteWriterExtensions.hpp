@@ -29,23 +29,20 @@ namespace bitscpp {
 	}
 
 #define ByteWriter_v2 v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-	template <typename T>
-struct _impl_v2_writer<std::set<T>> {
-	static inline ByteWriter_v2 &op(ByteWriter_v2 &s, const std::set<T> &set)
-	{
+template<typename T>
+struct serializer<ByteWriter_v2, std::set<T>> {
+	static inline void op(ByteWriter_v2& s, const std::set<T>& set) {
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);
-		return s;
 	}
 };
-	template<typename T>
-struct _impl_v2_writer<std::unordered_set<T>> {
-	static inline ByteWriter_v2& op(ByteWriter_v2& s, const std::unordered_set<T>& set) {
+template<typename T>
+struct serializer<ByteWriter_v2, std::unordered_set<T>> {
+	static inline void op(ByteWriter_v2& s, const std::unordered_set<T>& set) {
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);
-		return s;
 	}
 };
 #undef ByteWriter_v2

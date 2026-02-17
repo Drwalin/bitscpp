@@ -120,7 +120,13 @@ struct Struct {
 	}
 
 	template<typename S>
-	S& __ByteStream_op(S& s) {
+	S &__ByteStream_op(S& s) {
+		serialize(s);
+		return s;
+	}
+
+	void serialize(auto& s) {
+		using S = std::remove_cvref_t<decltype(s)>;
 		if constexpr (S::VERSION == 1) {
 			s.op(bytes16, 1);
 			s.op(bytes32, 1);
@@ -170,8 +176,6 @@ struct Struct {
 		
 		s.op(f2);
 		s.op(f1);
-		
-		return s;
 	}
 
 	void clear() {

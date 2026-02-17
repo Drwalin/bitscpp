@@ -1,7 +1,7 @@
 // Copyright (C) 2023-2026 Marek Zalewski aka Drwalin
 //
-// This file is part of bitscpp project under MIT License
-// You should have received a copy of the MIT License along with this program.
+// This file is part of bitscpp project under MIT License // You should have
+// received a copy of the MIT License along with this program.
 
 #ifndef BITSCPP_BYTE_WRITER_V2_HPP
 #define BITSCPP_BYTE_WRITER_V2_HPP
@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "VectorWrapper.hpp"
+#include "SerizalizerClass.hpp"
 
 /*
  * BT_TYPE requires following interface:
@@ -49,18 +50,6 @@ namespace bitscpp
 {
 namespace v2
 {
-class ByteWriter;
-}
-
-template <typename T> struct _impl_v2_writer {
-	static inline v2::ByteWriter &op(v2::ByteWriter &writer, const T &data)
-	{
-		return ((T &)data).__ByteStream_op(writer);
-	}
-};
-
-namespace v2
-{
 class ByteWriter
 {
 public:
@@ -68,9 +57,32 @@ public:
 
 	using BT = BITSCPP_BYTE_WRITER_V2_BT_TYPE;
 
-	template <typename T> inline ByteWriter &op(const T &data)
+	inline constexpr ByteWriter &op(const auto &item)
 	{
-		return bitscpp::_impl_v2_writer<T>::op(*this, (T &)data);
+		using T = std::remove_cvref_t<decltype(item)>;
+		if constexpr (requires { item.serialize(*this); }) {
+			item.serialize(*this);
+		} else if constexpr (requires { ((T &)item).serialize(*this); }) {
+			((T &)item).serialize(*this);
+		} else if constexpr (requires {
+								 serializer<ByteWriter, T>::op(*this, item);
+							 }) {
+			serializer<ByteWriter, T>::op(*this, item);
+		} else if constexpr (requires {
+								 serializer<ByteWriter, T>::op(*this,
+															   (T &)item);
+							 }) {
+			serializer<ByteWriter, T>::op(*this, (T &)item);
+		} else if constexpr (requires { serialize(*this, item); }) {
+			serialize(*this, item);
+		} else if constexpr (requires { serialize(*this, (T &)item); }) {
+			serialize(*this, (T &)item);
+		} else {
+			static_assert(
+				false &&
+				"Unimplemented bitscpp serialization function or method");
+		}
+		return *this;
 	}
 
 public:
