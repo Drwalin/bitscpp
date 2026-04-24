@@ -1,7 +1,7 @@
 // Copyright (C) 2023-2026 Marek Zalewski aka Drwalin
 //
-// This file is part of bitscpp project under MIT License
-// You should have received a copy of the MIT License along with this program.
+// This file is part of bitscpp project under MIT License // You should have
+// received a copy of the MIT License along with this program.
 
 #ifndef BITSCPP_BYTE_WRITER_V2_HPP
 #define BITSCPP_BYTE_WRITER_V2_HPP
@@ -13,6 +13,9 @@
 #include <string_view>
 #include <vector>
 
+#include "VectorWrapper.hpp"
+#include "SerizalizerClass.hpp"
+
 /*
  * BT_TYPE requires following interface:
  * class BT {
@@ -21,13 +24,15 @@
  *   void resize(size_t newSize);
  *   size_t capacity();
  *   void reserve(size_t newCapacity);
+ *   void push_back(uint8_t byte);
+ *   void write(const uint8_t *data, uint32_t bytes);
  * };
  *
  * behavior should be similar to std::vector<uint8_t>
  */
 
 #ifndef BITSCPP_BYTE_WRITER_V2_BT_TYPE
-#define BITSCPP_BYTE_WRITER_V2_BT_TYPE std::vector<uint8_t>
+#define BITSCPP_BYTE_WRITER_V2_BT_TYPE VectorWrapper
 #endif
 
 #ifndef BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
@@ -41,50 +46,10 @@
 #define ByteWriter                                                             \
 	BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
-#define BITSCPP_TO_STR(X) #X
-
 namespace bitscpp
 {
 namespace v2
 {
-class ByteWriter;
-}
-
-template <typename T> struct _impl_v2_writer {
-	static inline v2::ByteWriter &op(v2::ByteWriter &writer, const T &data)
-	{
-		if constexpr (requires{((T &)data).__ByteStream_op(writer);}) {
-			((T &)data).__ByteStream_op(writer);
-		} else {
-			static_assert("Something went wrong, implement either "
-					"::__ByteStream_op(v2::ByteWriter_"
-					BITSCPP_TO_STR(BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-					") or struct bitscpp::v2::_impl_v2_writer with method "
-					"::op(v2::ByteWriter_"
-					BITSCPP_TO_STR(BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-					" &writer, const T &data)");
-		}
-		return writer;
-	}
-};
-
-namespace v2
-{
-namespace impl
-{
-template <typename T>
-static inline ByteWriter &__op_ptr(v2::ByteWriter &writer, T *const data)
-{
-	return bitscpp::_impl_v2_writer<T>::op(writer, *data);
-}
-
-template <typename T>
-static inline ByteWriter &__op_ref(v2::ByteWriter &writer, const T &data)
-{
-	return bitscpp::_impl_v2_writer<T>::op(writer, data);
-}
-} // namespace impl
-
 class ByteWriter
 {
 public:
@@ -92,30 +57,38 @@ public:
 
 	using BT = BITSCPP_BYTE_WRITER_V2_BT_TYPE;
 
-	template <typename T> inline ByteWriter &op(T *const data)
+	inline constexpr ByteWriter &op(const auto &item)
 	{
-		return bitscpp::_impl_v2_writer<T>::op(*this, *data);
-		impl::__op_ptr(*this, data);
-		return *this;
-	}
-
-	template <typename T> inline ByteWriter &op(const T &data)
-	{
-		return bitscpp::_impl_v2_writer<T>::op(*this, data);
-		impl::__op_ref(*this, data);
+		using T = std::remove_cvref_t<decltype(item)>;
+		if constexpr (requires { item.serialize(*this); }) {
+			item.serialize(*this);
+		} else if constexpr (requires { ((T &)item).serialize(*this); }) {
+			((T &)item).serialize(*this);
+		} else if constexpr (requires {
+								 serializer<ByteWriter, T>::op(*this, item);
+							 }) {
+			serializer<ByteWriter, T>::op(*this, item);
+		} else if constexpr (requires {
+								 serializer<ByteWriter, T>::op(*this,
+															   (T &)item);
+							 }) {
+			serializer<ByteWriter, T>::op(*this, (T &)item);
+		} else if constexpr (requires { serialize(*this, item); }) {
+			serialize(*this, item);
+		} else if constexpr (requires { serialize(*this, (T &)item); }) {
+			serialize(*this, (T &)item);
+		} else {
+			static_assert(
+				false &&
+				"Unimplemented bitscpp serialization function or method");
+		}
 		return *this;
 	}
 
 public:
 	inline uint32_t GetSize() const { return _buffer->size(); }
 
-	void Init(BT *buffer)
-	{
-		this->_buffer = buffer;
-		ptr = _buffer->data();
-	}
-	inline ByteWriter() : _buffer(nullptr), ptr(nullptr) {}
-	inline ByteWriter(BT &buffer) { Init(&buffer); }
+	inline void Init(BT *buffer) { _buffer = buffer; }
 	inline ByteWriter(BT *buffer) { Init(buffer); }
 
 	// strings
@@ -204,16 +177,12 @@ private:
 	void _append(const uint8_t *data, uint32_t bytes);
 
 private:
-	size_t _expand(size_t bytesToExpand);
+	uint8_t *_expand(size_t bytesToExpand);
 	void _reserve_expand(size_t bytesToExpand);
 	void _reserve(size_t newCapacity);
 
 private:
-	BT *_buffer = nullptr;
-	uint8_t *ptr = nullptr;
-
-public:
-	bool hasError = false;
+	BT *_buffer;
 };
 
 } // namespace v2

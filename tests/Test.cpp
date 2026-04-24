@@ -1,16 +1,18 @@
 
-#define BITSCPP_BYTE_WRITER_V2_BT_TYPE std::vector<uint8_t>
+#define BITSCPP_BYTE_WRITER_V2_BT_TYPE bitscpp::VectorWrapper
 #define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector_test
 
+#include "../include/bitscpp/VectorWrapper.hpp"
 #include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/ByteWriterExtensions.hpp"
 #include "../include/bitscpp/ByteReaderExtensions.hpp"
-
 #include "../src/ByteWriter_v2.cpp"
 
 #include <iostream>
 
 #include <cstdio>
+
+uint64_t totalErrors = 0;
 
 template<typename T>
 std::ostream& operator<<(std::ostream& s, std::set<T> v) {
@@ -43,6 +45,10 @@ struct Struct {
 
 	Struct& operator= (const Struct& other) {
 		memcpy(this, &other, sizeof(*this));
+		memcpy(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16);
+		str = other.str;
+		str2 = other.str2;
+		is = other.is;
 		return *this;
 	}
 
@@ -118,7 +124,13 @@ struct Struct {
 	}
 
 	template<typename S>
-	S& __ByteStream_op(S& s) {
+	S &__ByteStream_op(S& s) {
+		serialize(s);
+		return s;
+	}
+
+	void serialize(auto& s) {
+		using S = std::remove_cvref_t<decltype(s)>;
 		if constexpr (S::VERSION == 1) {
 			s.op(bytes16, 1);
 			s.op(bytes32, 1);
@@ -168,8 +180,6 @@ struct Struct {
 		
 		s.op(f2);
 		s.op(f1);
-		
-		return s;
 	}
 
 	void clear() {
@@ -279,9 +289,10 @@ void Random(Struct& s) {
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
-		std::vector<uint8_t> ____buffer; \
+		bitscpp::VectorWrapper ____buffer; \
 		{ ByteWriter s(____buffer); \
-		X;} \
+		X;\
+		} \
 		v = 0; \
 		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X;} \
@@ -291,9 +302,10 @@ void Random(Struct& s) {
 
 #define COMPARE(T, orig, value, X) { \
 		T v = orig; \
-		std::vector<uint8_t> ____buffer; \
-		{ ByteWriter s(____buffer); \
-		X;} \
+		bitscpp::VectorWrapper ____buffer; \
+		{ ByteWriter s(&____buffer); \
+		X;\
+		} \
 		v = T(); \
 		{ ByteReader s(____buffer.data(), ____buffer.size()); \
 		X; \
@@ -314,9 +326,10 @@ int main() {
 	int correct = 0, incorrect = 0;
 	
 	{
-	std::vector<uint8_t> buffer;
+	bitscpp::VectorWrapper buffer;
 	
 	for(int i=0; i<16; ++i) {
+		memset(buffer.data(), 0, buffer.size());
 		buffer.resize(10000);
 		Random((void*)buffer.data(), buffer.size());
 		buffer.clear();
@@ -326,7 +339,7 @@ int main() {
 		s2.clear();
 		Random(s1);
 		
-		ByteWriter writer(buffer);
+		ByteWriter writer(&buffer);
 		writer.op(s1);
 		
 		ByteReader reader(buffer.data(), buffer.size());
@@ -408,6 +421,8 @@ int main() {
 	
 	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
 	
+	totalErrors += incorrect;
+	
 	return 0;
 }
 };
@@ -423,6 +438,7 @@ void TestNetworkOrder() {
 				printf(" [bytes=%i]  %16lX == %16lX . . .", bytes, value, v);
 				if (v != value) {
 					printf("              FAILED ! ! !\n");
+					totalErrors++;
 				} else {
 					printf(" SUCCESS\n");
 				}
@@ -450,6 +466,8 @@ int main() {
 	
 	printf("\n\n");
 	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<std::vector<uint8_t>>>{}.main();
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	
+	return totalErrors ? 1 : 0;
 }
 

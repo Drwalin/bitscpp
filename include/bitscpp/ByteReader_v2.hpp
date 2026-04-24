@@ -13,39 +13,12 @@
 #include <vector>
 
 #include "V2_Specification.hpp"
+#include "SerizalizerClass.hpp"
 
 namespace bitscpp
 {
 namespace v2
 {
-class ByteReader;
-}
-
-template <typename T> struct _impl_v2_reader {
-	static inline v2::ByteReader &op(v2::ByteReader &reader, T &data)
-	{
-		data.__ByteStream_op(reader);
-		return reader;
-	}
-};
-
-namespace v2
-{
-namespace impl
-{
-template <typename T>
-static inline ByteReader &__op_ptr(ByteReader &reader, T *data)
-{
-	return _impl_v2_reader<T>::op(reader, *data);
-}
-
-template <typename T>
-static inline ByteReader &__op_ref(ByteReader &reader, T &data)
-{
-	return _impl_v2_reader<T>::op(reader, data);
-}
-} // namespace impl
-
 enum ByteReaderErrors : uint32_t {
 	ERROR_OK = 0,
 	ERROR_BUFFER_TOO_SMALL = 1,
@@ -57,17 +30,22 @@ class ByteReader
 public:
 	constexpr static int VERSION = 2;
 
-	template <typename T> inline ByteReader &op(T *data)
+	constexpr ByteReader &op(auto &item)
 	{
-		return _impl_v2_reader<T>::op(*this, *data);
-		impl::__op_ptr(*this, data);
-		return *this;
-	}
-
-	template <typename T> inline ByteReader &op(T &data)
-	{
-		return _impl_v2_reader<T>::op(*this, data);
-		impl::__op_ref(*this, data);
+		using T = std::remove_cvref_t<decltype(item)>;
+		if constexpr (requires { item.serialize(*this); }) {
+			item.serialize(*this);
+		} else if constexpr (requires {
+								 serializer<ByteReader, T>::op(*this, item);
+							 }) {
+			serializer<ByteReader, T>::op(*this, item);
+		} else if constexpr (requires { serialize(*this, item); }) {
+			serialize(*this, (T &)item);
+		} else {
+			static_assert(
+				false &&
+				"unimplemented bitscpp deserialization function or method");
+		}
 		return *this;
 	}
 
