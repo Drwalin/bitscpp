@@ -1,7 +1,12 @@
 
-#include "bitscpp/Endianness.hpp"
-#include <bitscpp/ByteWriterExtensions.hpp>
-#include <bitscpp/ByteReaderExtensions.hpp>
+#define BITSCPP_BYTE_WRITER_V2_BT_TYPE std::vector<uint8_t>
+#define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector_test
+
+#include "../include/bitscpp/Endianness.hpp"
+#include "../include/bitscpp/ByteWriterExtensions.hpp"
+#include "../include/bitscpp/ByteReaderExtensions.hpp"
+
+#include "../src/ByteWriter_v2.cpp"
 
 #include <iostream>
 

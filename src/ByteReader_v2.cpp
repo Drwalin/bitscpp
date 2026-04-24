@@ -250,6 +250,19 @@ ByteReader &ByteReader::op(std::vector<uint8_t> &data)
 {
 	return op_byte_array(data);
 }
+ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
+{
+	uint32_t bytes = 0;
+	op_sized_byte_array_header(bytes);
+	data.resize(bytes);
+	memcpy(data.data(), ptr, bytes);
+	ptr += bytes;
+	return *this;
+}
+ByteReader &ByteReader::op(std::vector<char> &data)
+{
+	return op_byte_array(data);
+}
 
 // miscelanous
 ByteReader &ByteReader::op(bool &v) { return op_boolean(v); }
@@ -262,13 +275,15 @@ ByteReader &ByteReader::op_boolean(bool &v)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
-	const uint8_t vi = header - BEG_BOOLEAN;
-	if (vi < 2) {
-		[[unlikely]];
-		errors |= ERROR_TYPE_MISMATCH;
+	if (header == BOOLEAN_TRUE) {
+		v = true;
+		return *this;
+	} else if (header == BOOLEAN_FALSE) {
+		v = false;
 		return *this;
 	}
-	v = header == BOOLEAN_TRUE;
+	v = false;
+	errors |= ERROR_TYPE_MISMATCH;
 	return *this;
 }
 ByteReader &ByteReader::op_begin_object()
@@ -715,6 +730,17 @@ ByteReader &ByteReader::op_untyped_var_int(int64_t &v)
 	const uint64_t abs = vv >> 1;
 	vv = sign ? ~abs : abs;
 	v = vv;
+	return *this;
+}
+ByteReader &ByteReader::op_untyped_uint32(uint32_t &v)
+{
+	if (has_bytes_to_read(4)) {
+		[[likely]];
+		v = ReadBytesInNetworkOrder(ptr, 4);
+		ptr += 4;
+	} else {
+		errors |= ERROR_BUFFER_TOO_SMALL;
+	}
 	return *this;
 }
 

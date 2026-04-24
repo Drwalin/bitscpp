@@ -93,6 +93,14 @@ ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data);
 }
+ByteWriter &ByteWriter::op_byte_array(const std::vector<char> &data)
+{
+	return op_byte_array((const uint8_t*)data.data(), data.size());
+}
+ByteWriter &ByteWriter::op(const std::vector<char> &data)
+{
+	return op_byte_array(data);
+}
 
 ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
 ByteWriter &ByteWriter::op_boolean(bool v)
@@ -241,8 +249,17 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 		uint8_t byte = (uint8_t)value;
 		_append_byte(byte);
 	} else {
-		constexpr uint8_t _bytes[] = {0,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,5,5,5,5,6,6,6,6,6,6,6,7,7,7,7,7,7,7,8,8,8,8,8,8,8,9,9,9,9,9,9,9};
 		const uint32_t bits = std::bit_width(value);
+		constexpr uint8_t _bytes[64] = {
+			1,1,1,1,1,1,1,
+			2,2,2,2,2,2,2,
+			3,3,3,3,3,3,3,
+			4,4,4,4,4,4,4,
+			5,5,5,5,5,5,5,
+			6,6,6,6,6,6,6,
+			7,7,7,7,7,7,7,
+			8,8,8,8,8,8,8,
+			9,9,9,9,9,9,9,9};
 		const uint32_t bytes = _bytes[bits];
 		assert(bytes == (bits + 6) / 7);
 
@@ -250,7 +267,7 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 									 0x07, 0x03, 0x01, 0x00, 0x00};
 		constexpr uint8_t ones[] = {0x00, 0x00, 0x80, 0xC0, 0xE0,
 									0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
-		constexpr uint8_t shifts[] = {0, 7, 6, 5, 4, 3, 2, 1, 0, 0};
+		constexpr uint8_t shifts[] = {0, 6, 5, 4, 3, 2, 1, 0, 0};
 
 		const uint32_t offset = _expand(bytes);
 
@@ -268,6 +285,15 @@ ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
 	const uint64_t sign = uvalue >> 63;
 	const uint64_t abs = sign ? ~uvalue : uvalue;
 	return op_untyped_var_uint((abs << 1) | sign);
+}
+
+ByteWriter &ByteWriter::op_untyped_uint32(uint32_t v)
+{
+	const uint32_t offset = _expand(4);
+	WriteBytesInNetworkOrder(ptr + offset, v, 4);
+	
+	
+	return *this;
 }
 
 void ByteWriter::_append_byte(const uint8_t byte)

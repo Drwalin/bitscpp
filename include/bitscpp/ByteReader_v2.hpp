@@ -73,12 +73,12 @@ public:
 
 public:
 	inline ByteReader(const uint8_t *buffer, uint32_t offset, uint32_t size)
-		: _buffer(buffer), total_size(size), ptr(buffer + offset),
-		  end(buffer + size), errors(0)
+		: _buffer(buffer), ptr(buffer + offset), end(buffer + size),
+		  total_size(size), errors(0)
 	{
 	}
 	inline ByteReader(const uint8_t *buffer, uint32_t size)
-		: _buffer(buffer), total_size(size), ptr(buffer), end(buffer + size),
+		: _buffer(buffer), ptr(buffer), end(buffer + size), total_size(size),
 		  errors(0)
 	{
 	}
@@ -123,6 +123,8 @@ public:
 	ByteReader &op_byte_array(uint8_t const *&data, uint32_t &bytes);
 	ByteReader &op_byte_array(std::vector<uint8_t> &data);
 	ByteReader &op(std::vector<uint8_t> &data);
+	ByteReader &op_byte_array(std::vector<char> &data);
+	ByteReader &op(std::vector<char> &data);
 
 	// miscelanous
 	ByteReader &op(bool &v);
@@ -165,6 +167,8 @@ public:
 	ByteReader &op_untyped_var_uint(uint64_t &v);
 	ByteReader &op_untyped_var_int(int64_t &v);
 
+	ByteReader &op_untyped_uint32(uint32_t &v);
+
 public:
 	template <typename T>
 	inline ByteReader &op(T *data, const uint32_t elements)
@@ -201,13 +205,13 @@ public:
 protected:
 	bool has_bytes_to_read(uint32_t bytes) const;
 
-	uint8_t const *_buffer;
-	uint32_t total_size;
+	uint8_t const *_buffer = nullptr;
 
-	uint8_t const *ptr;
-	uint8_t const *end;
+	uint8_t const *ptr = nullptr;
+	uint8_t const *end = nullptr;
 
-	uint32_t errors;
+	uint32_t total_size = 0;
+	uint32_t errors = 0;
 };
 
 } // namespace v2

@@ -41,6 +41,8 @@
 #define ByteWriter                                                             \
 	BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
+#define BITSCPP_TO_STR(X) #X
+
 namespace bitscpp
 {
 namespace v2
@@ -51,7 +53,17 @@ class ByteWriter;
 template <typename T> struct _impl_v2_writer {
 	static inline v2::ByteWriter &op(v2::ByteWriter &writer, const T &data)
 	{
-		((T &)data).__ByteStream_op(writer);
+		if constexpr (requires{((T &)data).__ByteStream_op(writer);}) {
+			((T &)data).__ByteStream_op(writer);
+		} else {
+			static_assert("Something went wrong, implement either "
+					"::__ByteStream_op(v2::ByteWriter_"
+					BITSCPP_TO_STR(BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+					") or struct bitscpp::v2::_impl_v2_writer with method "
+					"::op(v2::ByteWriter_"
+					BITSCPP_TO_STR(BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+					" &writer, const T &data)");
+		}
 		return writer;
 	}
 };
@@ -127,6 +139,8 @@ public:
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
 	ByteWriter &op_byte_array(const std::vector<uint8_t> &data);
 	ByteWriter &op(const std::vector<uint8_t> &data);
+	ByteWriter &op_byte_array(const std::vector<char> &data);
+	ByteWriter &op(const std::vector<char> &data);
 
 	// miscelanous
 	ByteWriter &op(bool v);
@@ -167,6 +181,8 @@ public:
 	ByteWriter &op_untyped_var_uint(uint64_t value);
 	ByteWriter &op_untyped_var_int(int64_t value);
 
+	ByteWriter &op_untyped_uint32(uint32_t value);
+
 public:
 	template <typename T>
 	inline ByteWriter &op(const T *data, uint32_t elements)
@@ -193,8 +209,8 @@ private:
 	void _reserve(size_t newCapacity);
 
 private:
-	BT *_buffer;
-	uint8_t *ptr;
+	BT *_buffer = nullptr;
+	uint8_t *ptr = nullptr;
 
 public:
 	bool hasError = false;
