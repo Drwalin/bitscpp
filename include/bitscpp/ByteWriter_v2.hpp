@@ -89,6 +89,7 @@ public:
 	inline uint32_t GetSize() const { return _buffer->size(); }
 
 	inline void Init(BT *buffer) { _buffer = buffer; }
+	inline ByteWriter() { Init(nullptr); }
 	inline ByteWriter(BT *buffer) { Init(buffer); }
 
 	// strings
