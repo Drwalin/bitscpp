@@ -182,7 +182,7 @@ private:
 	void _reserve_expand(size_t bytesToExpand);
 	void _reserve(size_t newCapacity);
 
-private:
+public:
 	BT *_buffer;
 };
 
