@@ -76,7 +76,7 @@ ByteWriter &ByteWriter::op(const std::string_view str)
 }
 ByteWriter &ByteWriter::op(const char *str)
 {
-	return op_cstring(str);
+	return op_sized_string(str);
 }
 
 ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
@@ -143,7 +143,7 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 	} else {
 		uint64_t uv = (uint64_t)v;
 		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
-		const int bits = std::bit_width(uv);
+		const uint32_t bits = std::bit_width(uv);
 		if (bits <= 12) {
 			[[likely]];
 			const uint64_t low = uv & 0xF;

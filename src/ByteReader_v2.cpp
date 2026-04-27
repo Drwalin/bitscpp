@@ -403,7 +403,7 @@ ByteReader &ByteReader::op_int(int64_t &v)
 	++ptr;
 	uint64_t vv = 0;
 	if (header <= END_IMMEDIATE_INTEGER) {
-		v = header + IMMEDIATE_INTEGER_VALUE_MIN;
+		v = (int64_t)(uint32_t)header + (int64_t)IMMEDIATE_INTEGER_VALUE_MIN;
 		return *this;
 	} else if (header <= END_12B_INTEGER) {
 		if (has_bytes_to_read(1) == false) {
@@ -414,7 +414,9 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		const uint8_t secondByte = *ptr;
 		++ptr;
 		vv = ((uint64_t)secondByte) << 4;
-		vv |= ((uint64_t)(header - BEG_12B_INTEGER));
+		const uint8_t h = ((uint64_t)(header - BEG_12B_INTEGER));
+		assert(h < 16);
+		vv |= h;
 	} else if (header <= END_SIZED_INTEGER) {
 		int bytes = header - BEG_SIZED_INTEGER + 2;
 		if (has_bytes_to_read(bytes) == false) {
