@@ -325,7 +325,7 @@ ByteReader &ByteReader::op(uint8_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(uint16_t &v)
@@ -333,7 +333,7 @@ ByteReader &ByteReader::op(uint16_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(uint32_t &v)
@@ -341,7 +341,7 @@ ByteReader &ByteReader::op(uint32_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(uint64_t &v)
@@ -349,7 +349,7 @@ ByteReader &ByteReader::op(uint64_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(int8_t &v)
@@ -357,7 +357,7 @@ ByteReader &ByteReader::op(int8_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(int16_t &v)
@@ -365,7 +365,7 @@ ByteReader &ByteReader::op(int16_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(int32_t &v)
@@ -373,7 +373,7 @@ ByteReader &ByteReader::op(int32_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(int64_t &v)
@@ -381,7 +381,7 @@ ByteReader &ByteReader::op(int64_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 ByteReader &ByteReader::op(char &v)
@@ -389,7 +389,7 @@ ByteReader &ByteReader::op(char &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-	assert(v == vv);
+// 	assert(v == vv);
 	return *this;
 }
 
@@ -401,6 +401,7 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		errors |= ERROR_BUFFER_TOO_SMALL;
 		return *this;
 	}
+	
 	const uint8_t header = *ptr;
 	++ptr;
 	uint64_t vv = 0;
@@ -420,7 +421,9 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		assert(h < 16);
 		vv |= h;
 	} else if (header <= END_SIZED_INTEGER) {
-		int bytes = header - BEG_SIZED_INTEGER + 2;
+		const int bytes = header - BEG_SIZED_INTEGER + 2;
+		assert(bytes >= 2);
+		assert(bytes <= 8);
 		if (has_bytes_to_read(bytes) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;

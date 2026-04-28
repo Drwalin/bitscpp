@@ -140,29 +140,31 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 		v -= IMMEDIATE_INTEGER_VALUE_MIN;
 		assert(v >= 0 && v <= IMMEDIATE_INTEGER_MAX);
 		_append_byte((uint8_t)(uint64_t)v);
-	} else {
-		uint64_t uv = (uint64_t)v;
-		uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
-		const uint32_t bits = std::bit_width(uv);
-		if (bits <= 12) {
-			[[likely]];
-			const uint64_t low = uv & 0xF;
-			const uint64_t high = uv >> 4;
-			assert(low < 16);
-			assert(high < 256);
-			uint8_t *p = _expand(2);
-			p[0] = BEG_12B_INTEGER + (uint8_t)low;
-			p[1] = (uint8_t)high;
-		} else {
-			const int bytes = (bits + 7) >> 3;
-			uint8_t *p = _expand(bytes + 1);
-			assert(bytes >= 2);
-			assert(bytes <= 8);
-			*p = BEG_SIZED_INTEGER + bytes - 2;
-			assert(*p >= BEG_SIZED_INTEGER && *p <= END_SIZED_INTEGER);
-			WriteBytesInNetworkOrder(p + 1, uv, bytes);
-		}
+		return *this;
 	}
+	
+	uint64_t uv = (uint64_t)v;
+	uv = v < 0 ? ((~uv) << 1) | 1 : uv << 1;
+	const uint32_t bits = std::bit_width(uv);
+	if (bits <= 12) {
+		[[likely]];
+		const uint64_t low = uv & 0xF;
+		const uint64_t high = uv >> 4;
+		assert(low < 16);
+		assert(high < 256);
+		uint8_t *p = _expand(2);
+		p[0] = BEG_12B_INTEGER + (uint8_t)low;
+		p[1] = (uint8_t)high;
+	} else {
+		const int bytes = (bits + 7) >> 3;
+		uint8_t *p = _expand(bytes + 1);
+		assert(bytes >= 2);
+		assert(bytes <= 8);
+		*p = bytes + BEG_SIZED_INTEGER - 2;
+		assert(*p >= BEG_SIZED_INTEGER && *p <= END_SIZED_INTEGER);
+		WriteBytesInNetworkOrder(p + 1, uv, bytes);
+	}
+	
 	return *this;
 }
 
