@@ -97,6 +97,7 @@ ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 		bytes = 0;
 		return *this;
 	}
+
 	const uint8_t header = *ptr;
 	++ptr;
 	if (header < BEG_STRING_IMMEDIATE_SIZED) {
@@ -116,6 +117,7 @@ ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 		errors |= ERROR_TYPE_MISMATCH;
 		bytes = 0;
 	}
+
 	return *this;
 }
 ByteReader &ByteReader::op_sized_string_header(uint32_t &bytes)
@@ -707,18 +709,19 @@ ByteReader &ByteReader::op_untyped_var_uint(uint64_t &v)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
-	int32_t bits = std::countl_one(header);
-	if (bits > 1) {
-		if (has_bytes_to_read(bits) == false) {
+	const int32_t bytes = std::countl_one(header);
+	if (bytes >= 1) {
+		if (has_bytes_to_read(bytes) == false) {
 			[[unlikely]];
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
 		constexpr uint8_t masks[] = {0x7F, 0x3F, 0x1F, 0x0F,
 									 0x07, 0x03, 0x01, 0x00, 0x00};
-		constexpr uint8_t shifts[] = {0, 6, 5, 4, 3, 2, 1, 0, 0};
-		v = ReadBytesInNetworkOrder(ptr, bits) << shifts[bits];
-		v |= header & masks[bits];
+		constexpr uint8_t shifts[] = {7, 6, 5, 4, 3, 2, 1, 0, 0};
+		v = ReadBytesInNetworkOrder(ptr, bytes) << shifts[bytes];
+		ptr += bytes;
+		v |= header & masks[bytes];
 	} else {
 		v = header;
 	}

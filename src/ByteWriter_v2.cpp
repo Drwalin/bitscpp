@@ -268,7 +268,7 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 									 0x07, 0x03, 0x01, 0x00, 0x00};
 		constexpr uint8_t ones[] = {0x00, 0x00, 0x80, 0xC0, 0xE0,
 									0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
-		constexpr uint8_t shifts[] = {0, 6, 5, 4, 3, 2, 1, 0, 0};
+		constexpr uint8_t shifts[] = {0, 7, 6, 5, 4, 3, 2, 1, 0, 0};
 
 		uint8_t *p = _expand(bytes);
 
@@ -292,8 +292,6 @@ ByteWriter &ByteWriter::op_untyped_uint32(uint32_t v)
 {
 	uint8_t *ptr = _expand(4);
 	WriteBytesInNetworkOrder(ptr, v, 4);
-	
-	
 	return *this;
 }
 
