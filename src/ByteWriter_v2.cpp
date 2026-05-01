@@ -78,6 +78,10 @@ ByteWriter &ByteWriter::op(const char *str)
 {
 	return op_sized_string(str);
 }
+ByteWriter &ByteWriter::op(char *str)
+{
+	return op_sized_string(str);
+}
 
 ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
 {

@@ -108,6 +108,7 @@ public:
 	ByteWriter &op(const std::string &str);
 	ByteWriter &op(const std::string_view str);
 	ByteWriter &op(const char *str);
+	ByteWriter &op(char *str);
 
 	// constant size byte array
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
