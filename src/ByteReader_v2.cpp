@@ -752,6 +752,16 @@ ByteReader &ByteReader::op_untyped_uint32(uint32_t &v)
 	return *this;
 }
 
+ByteReader &ByteReader::skip(uint32_t bytes)
+{
+	if (has_bytes_to_read(bytes) == false) {
+		[[unlikely]];
+		errors |= ERROR_BUFFER_TOO_SMALL;
+		return *this;
+	}
+	ptr += bytes;
+	return *this;
+}
 bool ByteReader::is_valid() const { return errors == ERROR_OK; }
 uint32_t ByteReader::get_errors() const { return errors; }
 bool ByteReader::has_any_more() const { return ptr != end; }

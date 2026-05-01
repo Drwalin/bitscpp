@@ -147,6 +147,9 @@ public:
 
 	ByteReader &op_untyped_uint32(uint32_t &v);
 
+	// util
+	ByteReader &skip(uint32_t bytes);
+
 public:
 	template <typename T>
 	inline ByteReader &op(T *data, const uint32_t elements)

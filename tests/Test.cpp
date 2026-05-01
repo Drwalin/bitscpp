@@ -44,8 +44,8 @@ struct Struct {
 	}
 
 	Struct& operator= (const Struct& other) {
-		memcpy(this, &other, sizeof(*this));
-		memcpy(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16);
+		const uint64_t offset = ((uint8_t*)&bytes16) - ((uint8_t*)this);
+		memcpy(((uint8_t*)this)+offset, ((uint8_t*)&other)+offset, sizeof(Struct) - offset);
 		str = other.str;
 		str2 = other.str2;
 		is = other.is;
@@ -53,39 +53,41 @@ struct Struct {
 	}
 
 	bool operator==(const Struct& other) const {
-		return !memcmp(this, &other, (uint8_t*)&str-(uint8_t*)&bytes16) && str == other.str && str2 == other.str2 && is == other.is;
+		const uint64_t offset = ((uint8_t*)&bytes16) - ((uint8_t*)this);
+		return !memcmp(((uint8_t*)this)+offset, ((uint8_t*)&other)+offset, sizeof(Struct) - offset)
+			&& str == other.str && str2 == other.str2 && is == other.is;
 	}
+
+	std::string str;
+	std::string str2;
+	std::vector<int> is;
 
 	int64_t bytes16;
 	int64_t bytes32;
 	int64_t bytes64;
-	
-	uint8_t  a8;
-	int8_t  ua8;
-	uint8_t  b8;
-	int8_t  ub8;
-	
-	uint16_t a16;
-	int16_t ua16;
-	uint16_t b16;
-	int16_t ub16;
-	
-	uint32_t a32;
-	int32_t ua32;
-	uint32_t b32;
-	int32_t ub32;
-	
+
 	uint64_t a64;
 	int64_t ua64;
 	uint64_t b64;
 	int64_t ub64;
-	
+
 	double f2;
 	float f1;
-	
-	std::string str;
-	std::string str2;
-	std::vector<int> is;
+
+	uint32_t a32;
+	int32_t ua32;
+	uint32_t b32;
+	int32_t ub32;
+
+	uint16_t a16;
+	int16_t ua16;
+	uint16_t b16;
+	int16_t ub16;
+
+	uint8_t  a8;
+	int8_t  ua8;
+	uint8_t  b8;
+	int8_t  ub8;
 
 	void cmp(Struct& s) {
 		std::cout << "\n\n";
@@ -170,14 +172,14 @@ struct Struct {
 		s.op(ub8);
 		s.op(b16);
 		s.op(ub16);
-		
+
 		s.op(is);
-		
+
 		s.op(b32);
 		s.op(ub32);
 		s.op(b64);
 		s.op(ub64);
-		
+
 		s.op(f2);
 		s.op(f1);
 	}
@@ -289,7 +291,7 @@ void Random(Struct& s) {
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
-		bitscpp::VectorWrapper ____buffer; \
+		BITSCPP_BYTE_WRITER_V2_BT_TYPE ____buffer; \
 		{ ByteWriter s(____buffer); \
 		X;\
 		} \
@@ -302,7 +304,7 @@ void Random(Struct& s) {
 
 #define COMPARE(T, orig, value, X) { \
 		T v = orig; \
-		bitscpp::VectorWrapper ____buffer; \
+		BITSCPP_BYTE_WRITER_V2_BT_TYPE ____buffer; \
 		{ ByteWriter s(&____buffer); \
 		X;\
 		} \
@@ -326,10 +328,12 @@ int main() {
 	int correct = 0, incorrect = 0;
 	
 	{
-	bitscpp::VectorWrapper buffer;
+	BITSCPP_BYTE_WRITER_V2_BT_TYPE buffer;
 	
 	for(int i=0; i<16; ++i) {
-		memset(buffer.data(), 0, buffer.size());
+		if (buffer.size()) {
+			memset(buffer.data(), 0, buffer.size());
+		}
 		buffer.resize(10000);
 		Random((void*)buffer.data(), buffer.size());
 		buffer.clear();
@@ -466,7 +470,7 @@ int main() {
 	
 	printf("\n\n");
 	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<BITSCPP_BYTE_WRITER_V2_BT_TYPE>>{}.main();
 	
 	return totalErrors ? 1 : 0;
 }
