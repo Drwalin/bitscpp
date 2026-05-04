@@ -1,11 +1,16 @@
 
+#ifndef BITSCPP_BYTE_WRITER_V2_BT_TYPE
 #define BITSCPP_BYTE_WRITER_V2_BT_TYPE bitscpp::VectorWrapper
-#define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector_test
+#endif
 
-#include "../include/bitscpp/VectorWrapper.hpp"
+#ifndef BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
+#define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector_test
+#endif
+
+#include "../include/bitscpp/VectorWrapper.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/Endianness.hpp"
-#include "../include/bitscpp/ByteWriterExtensions.hpp"
-#include "../include/bitscpp/ByteReaderExtensions.hpp"
+#include "../include/bitscpp/ByteWriterExtensions.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
 #include "../src/ByteWriter_v2.cpp"
 
 #include <iostream>
@@ -188,7 +193,7 @@ struct Struct {
 		str.~basic_string();
 		str2.~basic_string();
 		is.~vector();
-		memset(this, 0, sizeof(*this));
+		memset((void*)this, 0, sizeof(*this));
 		new (&str) std::string;
 		new (&str2) std::string;
 		new (&is) std::vector<int>;
