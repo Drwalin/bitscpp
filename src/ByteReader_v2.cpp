@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-#include "../thirdpart/half_float/HalfFloat.hpp"
+#include "../thirdparty/half_float/HalfFloat.hpp"
 
 #include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/V2_Specification.hpp"

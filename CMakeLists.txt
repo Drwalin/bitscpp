@@ -13,7 +13,7 @@ include_directories(./include/)
 aux_source_directory(./src/ source_files)
 add_library(bitscpp STATIC
 	${source_files}
-	./thirdpart/half_float/HalfFloat.cpp
+	./thirdparty/half_float/HalfFloat.cpp
 )
 
 if(BITSCPP_BUILD_TEST)
