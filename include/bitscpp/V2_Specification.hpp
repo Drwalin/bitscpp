@@ -21,10 +21,9 @@ enum Type : uint8_t {
 	V2_BOOLEAN = 0x04,
 	V2_ARRAY = 0x05,
 	V2_STRING = 0x06,
-	V2_CSTRING = 0x07,
-	V2_MAP = 0x08,
-	V2_OBJECT_BEGIN = 0x09,
-	V2_OBJECT_END = 0x0A,
+	V2_MAP = 0x07,
+	V2_OBJECT_BEGIN = 0x08,
+	V2_OBJECT_END = 0x09,
 
 	V2_RESERVED = 0x1F,
 	
@@ -68,9 +67,8 @@ enum TypeHeader : uint8_t {
 	BEG_STRING_IMMEDIATE_SIZED = 0xD4,
 	END_STRING_IMMEDIATE_SIZED = 0xF8, // inclusive
 	BEG_STRING_VAR_SIZED = 0xF9,
-	BEG_CSTRING = 0xFA,
 	
-	BEG_RESERVED = 0xFB,
+	BEG_RESERVED = 0xFA,
 	END_RESERVED = 0xFF, // inclusive
 };
 
@@ -136,9 +134,7 @@ enum TypeHeader_ImmediateIntegerRanges : int64_t {
 	V2_STRING, V2_STRING, V2_STRING, V2_STRING, V2_STRING,
 	V2_STRING,
 
-	V2_CSTRING,
-
-	V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED,
+	V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED, V2_RESERVED,
 };
 
 static_assert(headerTranslation[BEG_IMMEDIATE_INTEGER] == V2_INT);
@@ -169,7 +165,6 @@ static_assert(headerTranslation[BEG_ARRAY_VAR_SIZED] == V2_ARRAY);
 static_assert(headerTranslation[BEG_STRING_IMMEDIATE_SIZED] == V2_STRING);
 static_assert(headerTranslation[END_STRING_IMMEDIATE_SIZED] == V2_STRING);
 static_assert(headerTranslation[BEG_STRING_VAR_SIZED] == V2_STRING);
-static_assert(headerTranslation[BEG_CSTRING] == V2_CSTRING);
 
 static_assert(headerTranslation[BEG_RESERVED] == V2_RESERVED);
 static_assert(headerTranslation[END_RESERVED] == V2_RESERVED);

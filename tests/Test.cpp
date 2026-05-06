@@ -170,7 +170,7 @@ struct Struct {
 		if constexpr (S::VERSION == 1) {
 			s.op_string_sized(str2, 4);
 		} else {
-			s.op_sized_string(str2);
+			s.op(str2);
 		}
 		
 		s.op(b8);

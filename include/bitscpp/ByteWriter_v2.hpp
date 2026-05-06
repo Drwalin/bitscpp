@@ -13,7 +13,7 @@
 #include <string_view>
 #include <vector>
 
-#include "VectorWrapper.hpp"
+#include "VectorWrapper.hpp" // IWYU pragma: keep
 #include "SerizalizerClass.hpp"
 
 /*
@@ -95,20 +95,11 @@ public:
 	// strings
 	ByteWriter &op_sized_byte_array_header(uint32_t bytes);
 	ByteWriter &op_sized_string_header(uint32_t bytes);
-	ByteWriter &op_cstring_header();
 
-	ByteWriter &op_sized_string(const std::string &str);
-	ByteWriter &op_sized_string(const std::string_view str);
-	ByteWriter &op_sized_string(char const *str);
-	ByteWriter &op_sized_string(char const *str, uint32_t size);
-	ByteWriter &op_cstring(const std::string &str);
-	ByteWriter &op_cstring(const std::string_view str);
-	ByteWriter &op_cstring(char const *str);
-	ByteWriter &op_cstring(char const *str, uint32_t size);
 	ByteWriter &op(const std::string &str);
 	ByteWriter &op(const std::string_view str);
-	ByteWriter &op(const char *str);
-	ByteWriter &op(char *str);
+	ByteWriter &op(char const *str);
+	ByteWriter &op(char const *str, uint32_t size);
 
 	// constant size byte array
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);

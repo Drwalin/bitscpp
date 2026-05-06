@@ -33,54 +33,22 @@ ByteWriter &ByteWriter::op_sized_string_header(uint32_t bytes)
 {
 	return op_sized_byte_array_header(bytes);
 }
-ByteWriter &ByteWriter::op_cstring_header()
-{
-	_append_byte(V2_CSTRING);
-	return *this;
-}
 
-ByteWriter &ByteWriter::op_sized_string(const std::string &str)
-{
-	return op_sized_string(str.c_str(), str.size());
-}
-ByteWriter &ByteWriter::op_sized_string(const std::string_view str)
-{
-	return op_sized_string(str.data(), str.size());
-}
-ByteWriter &ByteWriter::op_sized_string(const char *str)
-{
-	return op_sized_string(str, strlen(str));
-}
-ByteWriter &ByteWriter::op_sized_string(const char *str, uint32_t size)
-{
-	return op_byte_array((const uint8_t *)str, size);
-}
-ByteWriter &ByteWriter::op_cstring(const char *str)
-{
-	return op_cstring(str, strlen(str));
-}
-ByteWriter &ByteWriter::op_cstring(const char *str, uint32_t size)
-{
-	_reserve_expand(size + 2);
-	op_cstring_header();
-	_append((const uint8_t *)str, size + 1);
-	return *this;
-}
 ByteWriter &ByteWriter::op(const std::string &str)
 {
-	return op_sized_string(str);
+	return op(str.c_str(), str.size());
 }
 ByteWriter &ByteWriter::op(const std::string_view str)
 {
-	return op_sized_string(str);
+	return op(str.data(), str.size());
 }
 ByteWriter &ByteWriter::op(const char *str)
 {
-	return op_sized_string(str);
+	return op(str, strlen(str));
 }
-ByteWriter &ByteWriter::op(char *str)
+ByteWriter &ByteWriter::op(const char *str, uint32_t size)
 {
-	return op_sized_string(str);
+	return op_byte_array((const uint8_t *)str, size);
 }
 
 ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)

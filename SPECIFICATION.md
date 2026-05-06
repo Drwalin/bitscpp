@@ -81,16 +81,10 @@ H=<0xD4, 0xF8> -> string of size H-0xD4 in <0, 36>
 H=0xF9 + VAR_UINT -> string of size VAR_UINT+37
 ```
 
-### C-String
-
-```
-H=0xFA -> null terminated c-string
-```
-
 ### Reserved for future use
 
 ```
-H=<0xFB, 0xFF> -> reserved for future use
+H=<0xFA, 0xFF> -> reserved for future use
 ```
 
 ### Internal VAR\_UINT type

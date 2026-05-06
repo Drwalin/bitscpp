@@ -73,7 +73,6 @@ public:
 	bool is_next_float64() const;
 	bool is_next_bool() const;
 	bool is_next_string() const;
-	bool is_next_cstring() const;
 	bool is_next_map() const;
 	bool is_next_array() const;
 	bool is_next_beg_object() const;
@@ -83,19 +82,10 @@ public:
 	// strings
 	ByteReader &op_sized_byte_array_header(uint32_t &bytes);
 	ByteReader &op_sized_string_header(uint32_t &bytes);
-	ByteReader &op_cstring_header(uint32_t &bytes);
 
-	ByteReader &op_sized_string(std::string &str);
-	ByteReader &op_sized_string(std::string_view &str);
-	ByteReader &op_sized_string(char const *&str, uint32_t &size);
-	ByteReader &op_cstring(std::string &str);
-	ByteReader &op_cstring(std::string_view &str);
-	ByteReader &op_cstring(const char *&str);
-	ByteReader &op_cstring(const char *&str, uint32_t &size);
-	ByteReader &op_any_string(std::string_view &str);
-	ByteReader &op(std::string &str);
 	ByteReader &op(std::string_view &str);
-	ByteReader &op(char const *&str);
+	ByteReader &op(char const *&str, uint32_t &size);
+	ByteReader &op(std::string &str);
 
 	// byte array
 	ByteReader &op_byte_array(uint8_t const *&data, uint32_t &bytes);

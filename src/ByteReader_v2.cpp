@@ -67,10 +67,6 @@ bool ByteReader::is_next_string() const
 {
 	return get_next_detailed_type() == V2_STRING;
 }
-bool ByteReader::is_next_cstring() const
-{
-	return get_next_detailed_type() == V2_CSTRING;
-}
 bool ByteReader::is_next_map() const
 {
 	return get_next_detailed_type() == V2_MAP;
@@ -124,34 +120,15 @@ ByteReader &ByteReader::op_sized_string_header(uint32_t &bytes)
 {
 	return op_sized_byte_array_header(bytes);
 }
-ByteReader &ByteReader::op_cstring_header(uint32_t &bytes)
-{
-	if (has_bytes_to_read(1) == false) {
-		[[unlikely]];
-		errors |= ERROR_BUFFER_TOO_SMALL;
-		bytes = 0;
-		return *this;
-	}
-	const uint8_t header = *ptr;
-	++ptr;
-	if (header == BEG_CSTRING) {
-		bytes = strnlen((const char *)ptr, end - ptr);
-	} else {
-		[[unlikely]];
-		errors |= ERROR_TYPE_MISMATCH;
-		bytes = 0;
-	}
-	return *this;
-}
 
-ByteReader &ByteReader::op_sized_string(std::string &str)
+ByteReader &ByteReader::op(std::string &str)
 {
 	std::string_view sv;
-	op_sized_string(sv);
+	op(sv);
 	str = sv;
 	return *this;
 }
-ByteReader &ByteReader::op_sized_string(std::string_view &str)
+ByteReader &ByteReader::op(std::string_view &str)
 {
 	uint32_t size = 0;
 	op_sized_string_header(size);
@@ -164,80 +141,19 @@ ByteReader &ByteReader::op_sized_string(std::string_view &str)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op_sized_string(char const *&str, uint32_t &size)
-{
-	std::string_view sv;
-	op_sized_string(sv);
-	str = sv.data();
-	size = sv.size();
-	return *this;
-}
-ByteReader &ByteReader::op_cstring(char const *&str)
-{
-	uint32_t size;
-	return op_cstring(str, size);
-}
-ByteReader &ByteReader::op_cstring(std::string_view &str)
-{
-	char const *pstr = nullptr;
-	uint32_t size = 0;
-	op_cstring(pstr, size);
-	str = std::string_view(pstr, size);
-	return *this;
-}
-ByteReader &ByteReader::op_cstring(std::string &str)
-{
-	std::string_view sv;
-	op_cstring(sv);
-	str = sv;
-	return *this;
-}
-ByteReader &ByteReader::op_cstring(char const *&str, uint32_t &size)
-{
-	op_cstring_header(size);
-	if (!has_bytes_to_read(size + 1)) {
-		[[unlikely]];
-		errors |= ERROR_BUFFER_TOO_SMALL;
-	} else {
-		[[likely]];
-		str = (const char *)ptr;
-		ptr += size + 1;
-	}
-	return *this;
-}
-ByteReader &ByteReader::op_any_string(std::string_view &str)
-{
-	if (has_bytes_to_read(1) == false) {
-		[[unlikely]];
-		errors |= ERROR_BUFFER_TOO_SMALL;
-		return *this;
-	}
-	if (*ptr == BEG_CSTRING) {
-		return op_cstring(str);
-	} else {
-		return op_sized_string(str);
-	}
-}
-ByteReader &ByteReader::op(std::string &str)
+ByteReader &ByteReader::op(char const *&str, uint32_t &size)
 {
 	std::string_view sv;
 	op(sv);
-	str = sv;
+	str = sv.data();
+	size = sv.size();
 	return *this;
-}
-ByteReader &ByteReader::op(std::string_view &str)
-{
-	return op_any_string(str);
-}
-ByteReader &ByteReader::op(char const *&str)
-{
-	return op_cstring(str);
 }
 
 // byte array
 ByteReader &ByteReader::op_byte_array(uint8_t const *&data, uint32_t &bytes)
 {
-	return op_sized_string(*(char const **)&data, bytes);
+	return op(*(char const **)&data, bytes);
 }
 ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 {
