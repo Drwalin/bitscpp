@@ -353,10 +353,9 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		return *this;
 	}
 	
-	const uint64_t sign = vv & 1;
+	const uint64_t sign = ((int64_t)(vv << 63)) >> 63;
 	const uint64_t abs = vv >> 1;
-	vv = sign ? ~abs : abs;
-	v = vv;
+	v = sign ^ abs;
 	
 	return *this;
 }
