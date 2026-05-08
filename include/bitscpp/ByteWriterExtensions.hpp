@@ -32,6 +32,11 @@ namespace bitscpp {
 template<typename T>
 struct serializer<ByteWriter_v2, std::set<T>> {
 	static inline void op(ByteWriter_v2& s, const std::set<T>& set) {
+		assert(set.size() <= v2::MAX_ARRAY_ELEMENTS);
+		if (set.size() > v2::MAX_ARRAY_ELEMENTS) {
+			s.set_error(v2::ERROR_ARRAY_TOO_BIG);
+			return;
+		}
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);
@@ -40,6 +45,11 @@ struct serializer<ByteWriter_v2, std::set<T>> {
 template<typename T>
 struct serializer<ByteWriter_v2, std::unordered_set<T>> {
 	static inline void op(ByteWriter_v2& s, const std::unordered_set<T>& set) {
+		assert(set.size() <= v2::MAX_ARRAY_ELEMENTS);
+		if (set.size() > v2::MAX_ARRAY_ELEMENTS) {
+			s.set_error(v2::ERROR_ARRAY_TOO_BIG);
+			return;
+		}
 		s.op((uint32_t)set.size());
 		for(auto& v : set)
 			s.op(v);

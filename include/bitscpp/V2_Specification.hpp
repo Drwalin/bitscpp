@@ -12,9 +12,22 @@ namespace bitscpp
 {
 namespace v2
 {
+inline const static uint32_t MAX_ARRAY_ELEMENTS = 1024 * 1024 * 1024;
+inline const static uint32_t MAX_BUFFER_SIZE = 2 * 1024 * 1024 * 1024u - 1;
+
+enum Errors : uint32_t {
+	ERROR_OK = 0,
+	ERROR_BUFFER_TOO_SMALL = 1 << 0,
+	ERROR_TYPE_MISMATCH = 1 << 1,
+	ERROR_BUFFER_NULLPTR = 1 << 2,
+	ERROR_ARRAY_TOO_BIG = 1 << 3,
+	ERROR_BUFFER_TOO_BIG = 1 << 4,
+	ERROR_INTEGER_OVERFLOW = 1 << 5,
+};
+
 enum Type : uint8_t {
 	V2_ERROR = 0x00,
-	
+
 	V2_NULL = 0x01,
 	V2_INT = 0x02,
 	V2_FLOAT = 0x03,
@@ -26,7 +39,7 @@ enum Type : uint8_t {
 	V2_OBJECT_END = 0x09,
 
 	V2_RESERVED = 0x1F,
-	
+
 	V2_DETAIL_HALF = V2_FLOAT | 0x20,
 	V2_DETAIL_BFLOAT = V2_FLOAT | 0x60,
 	V2_DETAIL_DOUBLE = V2_FLOAT | 0x40,
@@ -67,15 +80,17 @@ enum TypeHeader : uint8_t {
 	BEG_STRING_IMMEDIATE_SIZED = 0xD4,
 	END_STRING_IMMEDIATE_SIZED = 0xF8, // inclusive
 	BEG_STRING_VAR_SIZED = 0xF9,
-	
+
 	BEG_RESERVED = 0xFA,
 	END_RESERVED = 0xFF, // inclusive
 };
 
 enum TypeHeader_ImmediateValues : uint8_t {
-	IMMEDIATE_STRING_MAX_SIZE = END_STRING_IMMEDIATE_SIZED - BEG_STRING_IMMEDIATE_SIZED,
+	IMMEDIATE_STRING_MAX_SIZE =
+		END_STRING_IMMEDIATE_SIZED - BEG_STRING_IMMEDIATE_SIZED,
 	IMMEDIATE_INTEGER_MAX = END_IMMEDIATE_INTEGER - BEG_IMMEDIATE_INTEGER,
-	IMMEDIATE_ARRAY_MAX_SIZE = END_ARRAY_IMMEDIATE_SIZED - BEG_ARRAY_IMMEDIATE_SIZED,
+	IMMEDIATE_ARRAY_MAX_SIZE =
+		END_ARRAY_IMMEDIATE_SIZED - BEG_ARRAY_IMMEDIATE_SIZED,
 };
 static_assert(IMMEDIATE_STRING_MAX_SIZE == 36);
 static_assert(IMMEDIATE_INTEGER_MAX == 159);
@@ -168,7 +183,7 @@ static_assert(headerTranslation[BEG_STRING_VAR_SIZED] == V2_STRING);
 
 static_assert(headerTranslation[BEG_RESERVED] == V2_RESERVED);
 static_assert(headerTranslation[END_RESERVED] == V2_RESERVED);
-}
-}
+} // namespace v2
+} // namespace bitscpp
 
 #endif

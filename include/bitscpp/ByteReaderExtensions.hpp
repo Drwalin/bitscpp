@@ -62,9 +62,24 @@ inline ByteReader<false>& op(ByteReader<false>& s, std::unordered_set<T>& set) {
 template<typename T>
 struct serializer<v2::ByteReader, std::set<T>> {
 static inline void op(v2::ByteReader& s, std::set<T>& set) {
-	uint32_t elements;
+	set.clear();
+	uint32_t elements = 0;
 	s.op(elements);
-	for(uint32_t i=0; i<elements; ++i) {
+	if (elements > v2::MAX_ARRAY_ELEMENTS) {
+		[[unlikely]];
+		s.set_error(v2::ERROR_ARRAY_TOO_BIG);
+		return;
+	}
+	if (elements > s.get_remaining_bytes()) {
+		[[unlikely]];
+		s.set_error(v2::ERROR_BUFFER_TOO_SMALL);
+		return;
+	}
+	if (s.get_errors()) {
+		[[unlikely]];
+		return;
+	}
+	for(uint32_t i=0; i<elements && s.get_errors() == v2::ERROR_OK; ++i) {
 		T v;
 		s.op(v);
 		set.emplace_hint(set.end(), std::move(v));
@@ -73,15 +88,30 @@ static inline void op(v2::ByteReader& s, std::set<T>& set) {
 };
 template<typename T>
 struct serializer<v2::ByteReader, std::unordered_set<T>> {
-static inline v2::ByteReader& op(v2::ByteReader& s, std::unordered_set<T>& set) {
-	uint32_t elements;
+static inline void op(v2::ByteReader& s, std::unordered_set<T>& set) {
+	set.clear();
+	uint32_t elements = 0;
 	s.op(elements);
-	for(uint32_t i=0; i<elements; ++i) {
+	if (elements > v2::MAX_ARRAY_ELEMENTS) {
+		[[unlikely]];
+		s.set_error(v2::ERROR_ARRAY_TOO_BIG);
+		return;
+	}
+	if (elements > s.get_remaining_bytes()) {
+		[[unlikely]];
+		s.set_error(v2::ERROR_BUFFER_TOO_SMALL);
+		return;
+	}
+	if (s.get_errors()) {
+		[[unlikely]];
+		return;
+	}
+	set.reserve(elements);
+	for(uint32_t i=0; i<elements && s.get_errors() == v2::ERROR_OK; ++i) {
 		T v;
 		s.op(v);
 		set.insert(std::move(v));
 	}
-	return s;
 }
 };
 } // namespace bitscpp

@@ -107,7 +107,12 @@ ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 		uint64_t size = 0;
 		op_untyped_var_uint(size);
 		bytes = size + IMMEDIATE_STRING_MAX_SIZE + 1;
-		assert(bytes == size + IMMEDIATE_STRING_MAX_SIZE + 1);
+		if (size > MAX_ARRAY_ELEMENTS - (IMMEDIATE_STRING_MAX_SIZE + 1)) {
+			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
+			bytes = 0;
+			return *this;
+		}
 	} else {
 		[[unlikely]];
 		errors |= ERROR_TYPE_MISMATCH;
@@ -141,6 +146,11 @@ ByteReader &ByteReader::op(std::string_view &str)
 	}
 	return *this;
 }
+ByteReader &ByteReader::op_byte_array(char const **str, uint32_t &size)
+{
+	assert(str);
+	return op(*str, size);
+}
 ByteReader &ByteReader::op(char const *&str, uint32_t &size)
 {
 	std::string_view sv;
@@ -151,14 +161,29 @@ ByteReader &ByteReader::op(char const *&str, uint32_t &size)
 }
 
 // byte array
+ByteReader &ByteReader::op_byte_array(uint8_t const **data, uint32_t &bytes)
+{
+	assert(data);
+	return op_byte_array((char const **)data, bytes);
+}
 ByteReader &ByteReader::op_byte_array(uint8_t const *&data, uint32_t &bytes)
 {
-	return op(*(char const **)&data, bytes);
+	uint8_t const **data_p = &data;
+	return op_byte_array(data_p, bytes);
 }
 ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 {
 	uint32_t bytes = 0;
 	op_sized_byte_array_header(bytes);
+	if (has_bytes_to_read(bytes) == false) {
+		[[unlikely]];
+		set_error(ERROR_BUFFER_TOO_SMALL);
+		return *this;
+	}
+	if (errors) {
+		[[unlikely]];
+		return *this;
+	}
 	data.resize(bytes);
 	memcpy(data.data(), ptr, bytes);
 	ptr += bytes;
@@ -172,6 +197,15 @@ ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
 {
 	uint32_t bytes = 0;
 	op_sized_byte_array_header(bytes);
+	if (has_bytes_to_read(bytes) == false) {
+		[[unlikely]];
+		set_error(ERROR_BUFFER_TOO_SMALL);
+		return *this;
+	}
+	if (errors) {
+		[[unlikely]];
+		return *this;
+	}
 	data.resize(bytes);
 	memcpy(data.data(), ptr, bytes);
 	ptr += bytes;
@@ -241,7 +275,9 @@ ByteReader &ByteReader::op(uint8_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(uint16_t &v)
@@ -249,7 +285,9 @@ ByteReader &ByteReader::op(uint16_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(uint32_t &v)
@@ -257,7 +295,9 @@ ByteReader &ByteReader::op(uint32_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(uint64_t &v)
@@ -265,7 +305,9 @@ ByteReader &ByteReader::op(uint64_t &v)
 	uint64_t vv;
 	op_uint(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(int8_t &v)
@@ -273,7 +315,9 @@ ByteReader &ByteReader::op(int8_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(int16_t &v)
@@ -281,7 +325,9 @@ ByteReader &ByteReader::op(int16_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(int32_t &v)
@@ -289,7 +335,9 @@ ByteReader &ByteReader::op(int32_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(int64_t &v)
@@ -297,7 +345,9 @@ ByteReader &ByteReader::op(int64_t &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 ByteReader &ByteReader::op(char &v)
@@ -305,11 +355,18 @@ ByteReader &ByteReader::op(char &v)
 	int64_t vv;
 	op_int(vv);
 	v = vv;
-// 	assert(v == vv);
+	if (v != vv) {
+		set_error(ERROR_INTEGER_OVERFLOW);
+	}
 	return *this;
 }
 
-ByteReader &ByteReader::op_uint(uint64_t &v) { return op_int((int64_t &)v); }
+ByteReader &ByteReader::op_uint(uint64_t &v) {
+	int64_t vv = 0;
+	op_int(vv);
+	v = vv;
+	return *this;
+}
 ByteReader &ByteReader::op_int(int64_t &v)
 {
 	if (has_bytes_to_read(1) == false) {
@@ -549,17 +606,17 @@ void ByteReader::_read_bfloat(const uint8_t *ptr, float &v)
 {
 	const uint16_t bfloat = ReadBytesInNetworkOrder(ptr, 2);
 	uint32_t ffloat = ((uint32_t)bfloat) << 16;
-	v = *(float *)&ffloat;
+	v = std::bit_cast<float>(ffloat);
 }
 void ByteReader::_read_float(const uint8_t *ptr, float &v)
 {
 	const uint32_t vv = ReadBytesInNetworkOrder(ptr, 4);
-	v = *(const float *)&vv;
+	v = std::bit_cast<float>(vv);
 }
 void ByteReader::_read_double(const uint8_t *ptr, double &v)
 {
 	const uint64_t vv = ReadBytesInNetworkOrder(ptr, 8);
-	v = *(double *)&vv;
+	v = std::bit_cast<double>(vv);
 }
 
 // map
@@ -576,6 +633,12 @@ ByteReader &ByteReader::op_map_header(uint32_t &elements)
 		[[likely]];
 		uint64_t size;
 		op_untyped_var_uint(size);
+		if (size > MAX_ARRAY_ELEMENTS - 1) {
+			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
+			elements = 0;
+			return *this;
+		}
 		elements = size+1;
 	} else if (header == BEG_MAP_EMPTY) {
 		elements = 0;
@@ -609,6 +672,12 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 		uint64_t size = 0;
 		op_untyped_var_uint(size);
 		elements = size + IMMEDIATE_ARRAY_MAX_SIZE + 1;
+		if (size > MAX_ARRAY_ELEMENTS - (IMMEDIATE_ARRAY_MAX_SIZE + 1)) {
+			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
+			elements = 0;
+			return *this;
+		}
 		assert(elements == size + IMMEDIATE_ARRAY_MAX_SIZE + 1);
 	} else {
 		[[unlikely]];
@@ -678,7 +747,7 @@ ByteReader &ByteReader::skip(uint32_t bytes)
 	return *this;
 }
 bool ByteReader::is_valid() const { return errors == ERROR_OK; }
-uint32_t ByteReader::get_errors() const { return errors; }
+Errors ByteReader::get_errors() const { return (Errors)errors; }
 bool ByteReader::has_any_more() const { return ptr != end; }
 uint32_t ByteReader::get_offset() const { return ptr - _buffer; }
 const uint8_t *ByteReader::get_buffer() const { return _buffer; }
@@ -687,6 +756,8 @@ bool ByteReader::has_bytes_to_read(uint32_t bytes) const
 {
 	return bytes <= end - ptr;
 }
+
+void ByteReader::set_error(Errors error) { errors |= error; }
 
 } // namespace v2
 } // namespace bitscpp

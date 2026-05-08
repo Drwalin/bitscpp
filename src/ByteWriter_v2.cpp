@@ -162,7 +162,11 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 	p[0] = BEG_BFLOAT;
 	if (exponent == exponentMask) {
 		[[unlikely]];
-		p[1] = fraction == 0 ? 0x80 : 0xFF;
+		if (fraction == 0) { // infinity
+			p[1] = 0x80;
+		} else { // not a number
+			p[1] = 0xFF;
+		}
 		p[2] = bv32 >> 24;
 		return *this;
 	} else {
@@ -225,7 +229,7 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 		_append_byte(byte);
 	} else {
 		const uint32_t bits = std::bit_width(value);
-		constexpr uint8_t _bytes[64] = {
+		constexpr uint8_t _bytes[65] = {
 			1,1,1,1,1,1,1,
 			2,2,2,2,2,2,2,
 			3,3,3,3,3,3,3,
@@ -233,23 +237,23 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 			5,5,5,5,5,5,5,
 			6,6,6,6,6,6,6,
 			7,7,7,7,7,7,7,
-			8,8,8,8,8,8,8,
+			8,8,8,8,8,8,8,8,
 			9,9,9,9,9,9,9,9};
 		const uint32_t bytes = _bytes[bits];
 		assert(bytes == (bits + 6) / 7);
 
-		constexpr uint8_t masks[] = {0x00, 0x7F, 0x3F, 0x1F, 0x0F,
+		constexpr uint8_t masks[9] = {0x7F, 0x3F, 0x1F, 0x0F,
 									 0x07, 0x03, 0x01, 0x00, 0x00};
-		constexpr uint8_t ones[] = {0x00, 0x00, 0x80, 0xC0, 0xE0,
+		constexpr uint8_t ones[9] = {0x00, 0x80, 0xC0, 0xE0,
 									0xF0, 0xF8, 0xFC, 0xFE, 0xFF};
-		constexpr uint8_t shifts[] = {0, 7, 6, 5, 4, 3, 2, 1, 0, 0};
+		constexpr uint8_t shifts[9] = {7, 6, 5, 4, 3, 2, 1, 0, 0};
 
 		uint8_t *p = _expand(bytes);
 
-		const uint8_t header = (masks[bytes] & value) | ones[bytes];
+		const uint8_t header = (masks[bytes-1] & value) | ones[bytes-1];
 		p[0] = header;
 
-		value >>= shifts[bytes];
+		value >>= shifts[bytes-1];
 		WriteBytesInNetworkOrder(p + 1, value, bytes - 1);
 	}
 	return *this;
@@ -277,23 +281,30 @@ void ByteWriter::_append(const uint8_t *data, uint32_t bytes)
 uint8_t *ByteWriter::_expand(size_t bytesToExpand)
 {
 	size_t oldSize = _buffer->size();
-	_buffer->resize(oldSize + bytesToExpand);
+	size_t newSize = oldSize + bytesToExpand;
+	_reserve(newSize);
+	_buffer->resize(newSize);
 	return _buffer->data() + oldSize;
 }
 void ByteWriter::_reserve_expand(size_t bytesToExpand)
 {
-	if ((_buffer->capacity() - _buffer->size()) < bytesToExpand) {
-		[[unlikely]];
-		_reserve(_buffer->size() + bytesToExpand);
-	}
+	_reserve(_buffer->size() + bytesToExpand);
 }
 void ByteWriter::_reserve(size_t newCapacity)
 {
 	if (_buffer->capacity() < newCapacity) {
 		[[unlikely]];
+		if (newCapacity > MAX_BUFFER_SIZE) {
+			set_error(ERROR_BUFFER_TOO_SMALL);
+			// TODO: somehow throw error
+			return;
+		}
 		_buffer->reserve((newCapacity * 3) / 2 + 16);
 	}
 }
+
+Errors ByteWriter::get_errors() const { return (Errors)errors; }
+void ByteWriter::set_error(Errors error) { errors |= error; }
 
 } // namespace v2
 } // namespace bitscpp

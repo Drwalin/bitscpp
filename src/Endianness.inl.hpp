@@ -47,6 +47,9 @@ inline uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
 inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 8);
+	if (bytes <= 0 || bytes > 2) {
+		return;
+	}
 	uint8_t *end = buffer + bytes;
 	for (; buffer != end; ++buffer, value >>= 8) {
 		*buffer = value; 
@@ -55,6 +58,9 @@ inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 4);
+	if (bytes <= 0 || bytes > 4) {
+		return;
+	}
 	uint8_t *end = buffer + bytes;
 	for (; buffer != end; ++buffer, value >>= 8) {
 		*buffer = value; 
@@ -63,6 +69,9 @@ inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint32_t value, int bytes)
 inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint16_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 2);
+	if (bytes <= 0 || bytes > 2) {
+		return;
+	}
 	uint8_t *end = buffer + bytes;
 	for (; buffer != end; ++buffer, value >>= 8) {
 		*buffer = value;
@@ -128,11 +137,14 @@ inline uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 		v |= ((uint64_t)buffer[1]) << 8;
 	case 1:
 		v |= ((uint64_t)buffer[0]);
+		break;
+	default:
+		// TODO: set error
+		return 0;
 	}
 	return v;
 
-
-
+	/*
 	uint64_t value = 0;
 	uint8_t const *end = buffer - 1;
 	buffer = end + bytes;
@@ -141,6 +153,7 @@ inline uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 		value |= *buffer;
 	}
 	return value;
+	*/
 }
 } // namespace bitscpp
 

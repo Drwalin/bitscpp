@@ -75,18 +75,24 @@ public:
 			serializer<ByteWriter, T>::op(*this, (T &)item);
 		} else if constexpr (requires { serialize(*this, item); }) {
 			serialize(*this, item);
-		} else if constexpr (requires { serialize(*this, (T &)item); }) {
-			serialize(*this, (T &)item);
+		} else if constexpr (requires { serialize(*this, *(T *)&item); }) {
+			// TODO: remove this branch
+			static_assert(!"Consider removing this branch");
+			serialize(*this, *(T *)&item);
 		} else {
 			static_assert(
-				false &&
-				"Unimplemented bitscpp serialization function or method");
+				!"Unimplemented bitscpp serialization function or method");
 		}
 		return *this;
 	}
 
 public:
-	inline uint32_t GetSize() const { return _buffer->size(); }
+	inline uint32_t GetSize() const
+	{
+		if (_buffer == nullptr)
+			return 0;
+		return _buffer->size();
+	}
 
 	inline void Init(BT *buffer) { _buffer = buffer; }
 	inline ByteWriter() { Init(nullptr); }
@@ -149,10 +155,18 @@ public:
 
 	ByteWriter &op_untyped_uint32(uint32_t value);
 
+	void set_error(Errors error);
+	Errors get_errors() const;
+
 public:
 	template <typename T>
 	inline ByteWriter &op(const T *data, uint32_t elements)
 	{
+		assert(elements <= MAX_ARRAY_ELEMENTS);
+		if (elements > MAX_ARRAY_ELEMENTS) {
+			set_error(ERROR_ARRAY_TOO_BIG);
+			return *this;
+		}
 		_reserve_expand((1 + sizeof(T)) * elements + 16);
 		op_array_header(elements);
 		for (uint32_t i = 0; i < elements; ++i)
@@ -162,6 +176,11 @@ public:
 
 	template <typename T> inline ByteWriter &op(const std::vector<T> &arr)
 	{
+		assert(arr.size() <= MAX_ARRAY_ELEMENTS);
+		if (arr.size() > MAX_ARRAY_ELEMENTS) {
+			set_error(ERROR_ARRAY_TOO_BIG);
+			return *this;
+		}
 		return op<T>(arr.data(), arr.size());
 	}
 
@@ -175,7 +194,8 @@ private:
 	void _reserve(size_t newCapacity);
 
 public:
-	BT *_buffer;
+	BT *_buffer = nullptr;
+	uint32_t errors = 0;
 };
 
 } // namespace v2

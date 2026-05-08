@@ -19,12 +19,6 @@ namespace bitscpp
 {
 namespace v2
 {
-enum ByteReaderErrors : uint32_t {
-	ERROR_OK = 0,
-	ERROR_BUFFER_TOO_SMALL = 1,
-	ERROR_TYPE_MISMATCH = 2,
-};
-
 class ByteReader
 {
 public:
@@ -43,8 +37,7 @@ public:
 			serialize(*this, (T &)item);
 		} else {
 			static_assert(
-				false &&
-				"unimplemented bitscpp deserialization function or method");
+				!"unimplemented bitscpp deserialization function or method");
 		}
 		return *this;
 	}
@@ -54,11 +47,21 @@ public:
 		: _buffer(buffer), ptr(buffer + offset), end(buffer + size),
 		  total_size(size), errors(0)
 	{
+		if (buffer == nullptr) {
+			ptr = nullptr;
+			end = nullptr;
+			set_error(ERROR_BUFFER_NULLPTR);
+		}
 	}
 	inline ByteReader(const uint8_t *buffer, uint32_t size)
 		: _buffer(buffer), ptr(buffer), end(buffer + size), total_size(size),
 		  errors(0)
 	{
+		if (buffer == nullptr) {
+			ptr = nullptr;
+			end = nullptr;
+			set_error(ERROR_BUFFER_NULLPTR);
+		}
 	}
 
 public:
@@ -84,10 +87,12 @@ public:
 	ByteReader &op_sized_string_header(uint32_t &bytes);
 
 	ByteReader &op(std::string_view &str);
+	ByteReader &op_byte_array(char const **str, uint32_t &size);
 	ByteReader &op(char const *&str, uint32_t &size);
 	ByteReader &op(std::string &str);
 
 	// byte array
+	ByteReader &op_byte_array(uint8_t const **data, uint32_t &bytes);
 	ByteReader &op_byte_array(uint8_t const *&data, uint32_t &bytes);
 	ByteReader &op_byte_array(std::vector<uint8_t> &data);
 	ByteReader &op(std::vector<uint8_t> &data);
@@ -144,11 +149,20 @@ public:
 	template <typename T>
 	inline ByteReader &op(T *data, const uint32_t elements)
 	{
-		uint32_t size;
+		uint32_t size = 0;
 		op_array_header(size);
+		if (get_errors()) {
+			[[unlikely]];
+			return *this;
+		}
 		if (size != elements) {
 			[[unlikely]];
-			errors |= ERROR_TYPE_MISMATCH;
+			set_error(ERROR_TYPE_MISMATCH);
+			return *this;
+		}
+		if (elements > v2::MAX_ARRAY_ELEMENTS) {
+			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
 			return *this;
 		}
 		for (uint32_t i = 0; i < elements; ++i)
@@ -160,6 +174,20 @@ public:
 	{
 		uint32_t elems = 0;
 		op_array_header(elems);
+		if (get_errors()) {
+			[[unlikely]];
+			return *this;
+		}
+		if (elems > v2::MAX_ARRAY_ELEMENTS) {
+			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
+			return *this;
+		}
+		if (elems > get_remaining_bytes()) {
+			[[unlikely]];
+			set_error(ERROR_TYPE_MISMATCH);
+			return *this;
+		}
 		arr.resize(elems);
 		for (uint32_t i = 0; i < elems; ++i)
 			op(arr[i]);
@@ -167,11 +195,13 @@ public:
 	}
 
 	bool is_valid() const;
-	uint32_t get_errors() const;
+	Errors get_errors() const;
 	bool has_any_more() const;
 	uint32_t get_offset() const;
 	const uint8_t *get_buffer() const;
 	uint32_t get_remaining_bytes() const;
+
+	void set_error(Errors error);
 
 protected:
 	bool has_bytes_to_read(uint32_t bytes) const;
