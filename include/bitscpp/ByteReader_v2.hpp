@@ -23,6 +23,8 @@ class ByteReader
 {
 public:
 	constexpr static int VERSION = 2;
+	constexpr static bool READER = true;
+	constexpr static bool WRITER = false;
 
 	constexpr ByteReader &op(auto &item)
 	{
@@ -44,8 +46,9 @@ public:
 
 public:
 	inline ByteReader(const uint8_t *buffer, uint32_t offset, uint32_t size)
-		: _buffer(buffer), ptr(buffer + offset), end(buffer + size),
-		  total_size(size), errors(0)
+		: _buffer(buffer), ptr(buffer ? buffer + offset : nullptr),
+		  end(buffer ? buffer + size : nullptr), total_size(buffer ? size : 0),
+		  errors(0)
 	{
 		if (buffer == nullptr) {
 			ptr = nullptr;
@@ -54,14 +57,8 @@ public:
 		}
 	}
 	inline ByteReader(const uint8_t *buffer, uint32_t size)
-		: _buffer(buffer), ptr(buffer), end(buffer + size), total_size(size),
-		  errors(0)
+		: ByteReader(buffer, 0, size)
 	{
-		if (buffer == nullptr) {
-			ptr = nullptr;
-			end = nullptr;
-			set_error(ERROR_BUFFER_NULLPTR);
-		}
 	}
 
 public:
@@ -163,9 +160,11 @@ public:
 		if (elements > v2::MAX_ARRAY_ELEMENTS) {
 			[[unlikely]];
 			set_error(ERROR_ARRAY_TOO_BIG);
+			set_error(ERROR_TYPE_MISMATCH);
+			set_error(ERROR_BUFFER_TOO_SMALL);
 			return *this;
 		}
-		for (uint32_t i = 0; i < elements; ++i)
+		for (uint32_t i = 0; i < elements && errors == 0; ++i)
 			op(data[i]);
 		return *this;
 	}
@@ -185,11 +184,13 @@ public:
 		}
 		if (elems > get_remaining_bytes()) {
 			[[unlikely]];
+			set_error(ERROR_ARRAY_TOO_BIG);
 			set_error(ERROR_TYPE_MISMATCH);
+			set_error(ERROR_BUFFER_TOO_SMALL);
 			return *this;
 		}
 		arr.resize(elems);
-		for (uint32_t i = 0; i < elems; ++i)
+		for (uint32_t i = 0; i < elems && errors == 0; ++i)
 			op(arr[i]);
 		return *this;
 	}

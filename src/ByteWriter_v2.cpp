@@ -117,6 +117,8 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 	
 	uint64_t uv = (uint64_t)v;
 	uv = (uv << 1) ^ (v >> 63);
+	assert(uv == (v < 0? (((~v)<<1)|1) : v<<1));
+	static_assert(-1ll == (-10000000ll >> 63));
 	const uint32_t bits = std::bit_width(uv);
 	if (bits <= 12) {
 		[[likely]];

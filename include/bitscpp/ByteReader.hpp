@@ -63,6 +63,8 @@ namespace bitscpp {
 	public:
 		
 		constexpr static int VERSION = 1;
+		constexpr static bool READER = true;
+		constexpr static bool WRITER = false;
 		
 		template<typename T>
 		inline ByteReader& op(T* data) {

@@ -47,7 +47,7 @@ inline uint64_t NetworkToHostUint(uint64_t v) { return HostToNetworkUint(v); }
 inline void WriteBytesInNetworkOrder(uint8_t *buffer, uint64_t value, int bytes)
 {
 	assert(bytes > 0 && bytes <= 8);
-	if (bytes <= 0 || bytes > 2) {
+	if (bytes <= 0 || bytes > 8) {
 		return;
 	}
 	uint8_t *end = buffer + bytes;
@@ -123,18 +123,25 @@ inline uint64_t ReadBytesInNetworkOrder(uint8_t const *buffer, int bytes)
 	switch(bytes) {
 	case 8:
 		v |= ((uint64_t)buffer[7]) << 56;
+		[[fallthrough]];
 	case 7:
 		v |= ((uint64_t)buffer[6]) << 48;
+		[[fallthrough]];
 	case 6:
 		v |= ((uint64_t)buffer[5]) << 40;
+		[[fallthrough]];
 	case 5:
 		v |= ((uint64_t)buffer[4]) << 32;
+		[[fallthrough]];
 	case 4:
 		v |= ((uint64_t)buffer[3]) << 24;
+		[[fallthrough]];
 	case 3:
 		v |= ((uint64_t)buffer[2]) << 16;
+		[[fallthrough]];
 	case 2:
 		v |= ((uint64_t)buffer[1]) << 8;
+		[[fallthrough]];
 	case 1:
 		v |= ((uint64_t)buffer[0]);
 		break;

@@ -17,6 +17,8 @@
 
 #include <cstdio>
 
+#define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
+
 uint64_t totalErrors = 0;
 
 template<typename T>
@@ -136,7 +138,7 @@ struct Struct {
 		return s;
 	}
 
-	void serialize(auto& s) {
+	BITSCPP_DEFINE_INLINE_SERIALIZE_METHOD(s, {
 		using S = std::remove_cvref_t<decltype(s)>;
 		if constexpr (S::VERSION == 1) {
 			s.op(bytes16, 1);
@@ -168,8 +170,10 @@ struct Struct {
 		
 		s.op(str);
 		if constexpr (S::VERSION == 1) {
+			static_assert(S::VERSION == 1);
 			s.op_string_sized(str2, 4);
 		} else {
+			static_assert(S::VERSION != 1);
 			s.op(str2);
 		}
 		
@@ -187,7 +191,8 @@ struct Struct {
 
 		s.op(f2);
 		s.op(f1);
-	}
+	});
+#undef ByteWriter
 
 	void clear() {
 		str.~basic_string();
@@ -470,7 +475,6 @@ int main() {
 	
 	printf("\n\n");
 	printf("bitscpp::v2:\n");
-#define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 	Test<bitscpp::v2::ByteReader, ByteWriter_v2>{}.main();
 	
 	printf("\n\n");

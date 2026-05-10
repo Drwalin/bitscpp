@@ -5,7 +5,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <cstring>
 
 #include <string>
 #include <string_view>
@@ -106,6 +105,11 @@ ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 	} else if (header == BEG_STRING_VAR_SIZED) {
 		uint64_t size = 0;
 		op_untyped_var_uint(size);
+		if (errors != 0) {
+			[[unlikely]];
+			bytes = 0;
+			return *this;
+		}
 		bytes = size + IMMEDIATE_STRING_MAX_SIZE + 1;
 		if (size > MAX_ARRAY_ELEMENTS - (IMMEDIATE_STRING_MAX_SIZE + 1)) {
 			[[unlikely]];
@@ -137,6 +141,11 @@ ByteReader &ByteReader::op(std::string_view &str)
 {
 	uint32_t size = 0;
 	op_sized_string_header(size);
+	if (errors != 0) {
+		[[unlikely]];
+		str = {};
+		return *this;
+	}
 	if (has_bytes_to_read(size)) {
 		str = std::string_view((const char *)ptr, size);
 		ptr += size;
@@ -173,20 +182,13 @@ ByteReader &ByteReader::op_byte_array(uint8_t const *&data, uint32_t &bytes)
 }
 ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 {
-	uint32_t bytes = 0;
-	op_sized_byte_array_header(bytes);
-	if (has_bytes_to_read(bytes) == false) {
+	data.clear();
+	std::string_view sv;
+	op(sv);
+	if (errors == 0) {
 		[[unlikely]];
-		set_error(ERROR_BUFFER_TOO_SMALL);
-		return *this;
+		data.insert(data.end(), sv.begin(), sv.end());
 	}
-	if (errors) {
-		[[unlikely]];
-		return *this;
-	}
-	data.resize(bytes);
-	memcpy(data.data(), ptr, bytes);
-	ptr += bytes;
 	return *this;
 }
 ByteReader &ByteReader::op(std::vector<uint8_t> &data)
@@ -195,20 +197,13 @@ ByteReader &ByteReader::op(std::vector<uint8_t> &data)
 }
 ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
 {
-	uint32_t bytes = 0;
-	op_sized_byte_array_header(bytes);
-	if (has_bytes_to_read(bytes) == false) {
+	data.clear();
+	std::string_view sv;
+	op(sv);
+	if (errors == 0) {
 		[[unlikely]];
-		set_error(ERROR_BUFFER_TOO_SMALL);
-		return *this;
+		data.insert(data.end(), sv.begin(), sv.end());
 	}
-	if (errors) {
-		[[unlikely]];
-		return *this;
-	}
-	data.resize(bytes);
-	memcpy(data.data(), ptr, bytes);
-	ptr += bytes;
 	return *this;
 }
 ByteReader &ByteReader::op(std::vector<char> &data)
@@ -272,7 +267,7 @@ ByteReader &ByteReader::op_end_object()
 // integers
 ByteReader &ByteReader::op(uint8_t &v)
 {
-	uint64_t vv;
+	uint64_t vv = 0;
 	op_uint(vv);
 	v = vv;
 	if (v != vv) {
@@ -282,7 +277,7 @@ ByteReader &ByteReader::op(uint8_t &v)
 }
 ByteReader &ByteReader::op(uint16_t &v)
 {
-	uint64_t vv;
+	uint64_t vv = 0;
 	op_uint(vv);
 	v = vv;
 	if (v != vv) {
@@ -292,7 +287,7 @@ ByteReader &ByteReader::op(uint16_t &v)
 }
 ByteReader &ByteReader::op(uint32_t &v)
 {
-	uint64_t vv;
+	uint64_t vv = 0;
 	op_uint(vv);
 	v = vv;
 	if (v != vv) {
@@ -302,7 +297,7 @@ ByteReader &ByteReader::op(uint32_t &v)
 }
 ByteReader &ByteReader::op(uint64_t &v)
 {
-	uint64_t vv;
+	uint64_t vv = 0;
 	op_uint(vv);
 	v = vv;
 	if (v != vv) {
@@ -312,7 +307,7 @@ ByteReader &ByteReader::op(uint64_t &v)
 }
 ByteReader &ByteReader::op(int8_t &v)
 {
-	int64_t vv;
+	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	if (v != vv) {
@@ -322,7 +317,7 @@ ByteReader &ByteReader::op(int8_t &v)
 }
 ByteReader &ByteReader::op(int16_t &v)
 {
-	int64_t vv;
+	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	if (v != vv) {
@@ -332,7 +327,7 @@ ByteReader &ByteReader::op(int16_t &v)
 }
 ByteReader &ByteReader::op(int32_t &v)
 {
-	int64_t vv;
+	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	if (v != vv) {
@@ -342,7 +337,7 @@ ByteReader &ByteReader::op(int32_t &v)
 }
 ByteReader &ByteReader::op(int64_t &v)
 {
-	int64_t vv;
+	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	if (v != vv) {
@@ -352,7 +347,7 @@ ByteReader &ByteReader::op(int64_t &v)
 }
 ByteReader &ByteReader::op(char &v)
 {
-	int64_t vv;
+	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	if (v != vv) {
@@ -411,8 +406,10 @@ ByteReader &ByteReader::op_int(int64_t &v)
 	}
 	
 	const uint64_t sign = ((int64_t)(vv << 63)) >> 63;
+	assert((vv & 1) ? sign == -1ll : sign == 0);
 	const uint64_t abs = vv >> 1;
 	v = sign ^ abs;
+	static_assert(-1ll == (-10000000ll >> 63));
 	
 	return *this;
 }
@@ -491,7 +488,7 @@ ByteReader &ByteReader::op(float &v)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
-	double d;
+	double d = v;
 	switch (header) {
 	case BEG_HALF:
 		if (has_bytes_to_read(2) == false) {
@@ -526,7 +523,6 @@ ByteReader &ByteReader::op(float &v)
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		d = v;
 		_read_double(ptr, d);
 		v = d;
 		ptr += 8;
@@ -547,7 +543,7 @@ ByteReader &ByteReader::op(double &v)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
-	float f;
+	float f = v;
 	switch (header) {
 	case BEG_HALF:
 		if (has_bytes_to_read(2) == false) {
@@ -555,7 +551,6 @@ ByteReader &ByteReader::op(double &v)
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		f = v;
 		_read_half(ptr, f);
 		v = f;
 		ptr += 2;
@@ -566,7 +561,6 @@ ByteReader &ByteReader::op(double &v)
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		f = v;
 		_read_bfloat(ptr, f);
 		v = f;
 		ptr += 2;
@@ -577,7 +571,6 @@ ByteReader &ByteReader::op(double &v)
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		f = v;
 		_read_float(ptr, f);
 		v = f;
 		ptr += 4;
@@ -633,6 +626,11 @@ ByteReader &ByteReader::op_map_header(uint32_t &elements)
 		[[likely]];
 		uint64_t size;
 		op_untyped_var_uint(size);
+		if (errors != 0) {
+			[[unlikely]];
+			elements = 0;
+			return *this;
+		}
 		if (size > MAX_ARRAY_ELEMENTS - 1) {
 			[[unlikely]];
 			set_error(ERROR_ARRAY_TOO_BIG);
@@ -640,6 +638,11 @@ ByteReader &ByteReader::op_map_header(uint32_t &elements)
 			return *this;
 		}
 		elements = size+1;
+		if (has_bytes_to_read(elements) == false) {
+			set_error(ERROR_ARRAY_TOO_BIG);
+			set_error(ERROR_TYPE_MISMATCH);
+			set_error(ERROR_BUFFER_TOO_SMALL);
+		}
 	} else if (header == BEG_MAP_EMPTY) {
 		elements = 0;
 	} else {
@@ -671,6 +674,11 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 	} else if (header == BEG_ARRAY_VAR_SIZED) {
 		uint64_t size = 0;
 		op_untyped_var_uint(size);
+		if (errors != 0) {
+			[[unlikely]];
+			elements = 0;
+			return *this;
+		}
 		elements = size + IMMEDIATE_ARRAY_MAX_SIZE + 1;
 		if (size > MAX_ARRAY_ELEMENTS - (IMMEDIATE_ARRAY_MAX_SIZE + 1)) {
 			[[unlikely]];
@@ -679,6 +687,11 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 			return *this;
 		}
 		assert(elements == size + IMMEDIATE_ARRAY_MAX_SIZE + 1);
+		if (has_bytes_to_read(elements) == false) {
+			set_error(ERROR_ARRAY_TOO_BIG);
+			set_error(ERROR_TYPE_MISMATCH);
+			set_error(ERROR_BUFFER_TOO_SMALL);
+		}
 	} else {
 		[[unlikely]];
 		errors |= ERROR_TYPE_MISMATCH;

@@ -54,6 +54,8 @@ class ByteWriter
 {
 public:
 	constexpr static int VERSION = 2;
+	constexpr static bool READER = false;
+	constexpr static bool WRITER = true;
 
 	using BT = BITSCPP_BYTE_WRITER_V2_BT_TYPE;
 
@@ -63,6 +65,8 @@ public:
 		if constexpr (requires { item.serialize(*this); }) {
 			item.serialize(*this);
 		} else if constexpr (requires { ((T &)item).serialize(*this); }) {
+			// TODO: remove this branch
+			static_assert(!"Consider removing this branch");
 			((T &)item).serialize(*this);
 		} else if constexpr (requires {
 								 serializer<ByteWriter, T>::op(*this, item);
@@ -167,7 +171,7 @@ public:
 			set_error(ERROR_ARRAY_TOO_BIG);
 			return *this;
 		}
-		_reserve_expand((1 + sizeof(T)) * elements + 16);
+		_reserve_expand(32 + sizeof(T) * elements);
 		op_array_header(elements);
 		for (uint32_t i = 0; i < elements; ++i)
 			op(data[i]);
