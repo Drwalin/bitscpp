@@ -1,23 +1,13 @@
 
-#ifndef BITSCPP_BYTE_WRITER_V2_BT_TYPE
-#define BITSCPP_BYTE_WRITER_V2_BT_TYPE bitscpp::VectorWrapper
-#endif
-
-#ifndef BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
-#define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector_test
-#endif
-
 #include "../include/bitscpp/VectorWrapper.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/ByteWriterExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
-#include "../src/ByteWriter_v2.cpp"
+#include "../src/ByteWriter_v2.inl.hpp"
 
 #include <iostream>
 
 #include <cstdio>
-
-#define ByteWriter_v2 bitscpp::v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
 
 uint64_t totalErrors = 0;
 
@@ -301,7 +291,7 @@ void Random(Struct& s) {
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
-		BITSCPP_BYTE_WRITER_V2_BT_TYPE ____buffer; \
+		bitscpp::VectorWrapper ____buffer; \
 		{ ByteWriter s(____buffer); \
 		X;\
 		} \
@@ -314,7 +304,7 @@ void Random(Struct& s) {
 
 #define COMPARE(T, orig, value, X) { \
 		T v = orig; \
-		BITSCPP_BYTE_WRITER_V2_BT_TYPE ____buffer; \
+		bitscpp::VectorWrapper ____buffer; \
 		{ ByteWriter s(&____buffer); \
 		X;\
 		} \
@@ -338,7 +328,7 @@ int main() {
 	int correct = 0, incorrect = 0;
 	
 	{
-	BITSCPP_BYTE_WRITER_V2_BT_TYPE buffer;
+	bitscpp::VectorWrapper buffer;
 	
 	for(int i=0; i<16; ++i) {
 		if (buffer.size()) {
@@ -475,11 +465,11 @@ int main() {
 	
 	printf("\n\n");
 	printf("bitscpp::v2:\n");
-	Test<bitscpp::v2::ByteReader, ByteWriter_v2>{}.main();
+	Test<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	
 	printf("\n\n");
 	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<BITSCPP_BYTE_WRITER_V2_BT_TYPE>>{}.main();
+	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	
 	return totalErrors ? 1 : 0;
 }

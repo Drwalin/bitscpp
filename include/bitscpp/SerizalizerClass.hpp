@@ -12,7 +12,7 @@ template <typename S, typename T> struct serializer;
 } // namespace bitscpp
 
 #define BITSCPP_DEFINE_INLINE_SERIALIZE_METHOD(SERIALIZER, CODE) \
-	inline void serialize(auto &SERIALIZER) { CODE } \
-	inline void serialize(auto &SERIALIZER) const { CODE }
+	template<typename SER> inline void serialize(SER &SERIALIZER) { CODE } \
+	template<typename SER> inline void serialize(SER &SERIALIZER) const { CODE }
 
 #endif

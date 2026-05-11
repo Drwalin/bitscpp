@@ -26,7 +26,8 @@ public:
 	constexpr static bool READER = true;
 	constexpr static bool WRITER = false;
 
-	constexpr ByteReader &op(auto &item)
+	template<typename TT>
+	constexpr ByteReader &op(TT &item)
 	{
 		using T = std::remove_cvref_t<decltype(item)>;
 		if constexpr (requires { item.serialize(*this); }) {

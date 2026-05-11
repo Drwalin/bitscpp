@@ -4,6 +4,7 @@
 // You should have received a copy of the MIT License along with this program.
 
 #include <cassert>
+#include <cstring>
 
 #include "../thirdparty/half_float/HalfFloat.hpp"
 
@@ -12,14 +13,12 @@
 
 #include "../include/bitscpp/ByteWriter_v2.hpp"
 
-#define ByteWriter                                                             \
-	BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-
 namespace bitscpp
 {
 namespace v2
 {
-ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_sized_byte_array_header(uint32_t bytes)
 {
 	if (bytes <= IMMEDIATE_STRING_MAX_SIZE) {
 		_append_byte(BEG_STRING_IMMEDIATE_SIZED + (uint8_t)bytes);
@@ -29,83 +28,120 @@ ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
 	}
 	return *this;
 }
-ByteWriter &ByteWriter::op_sized_string_header(uint32_t bytes)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_sized_string_header(uint32_t bytes)
 {
 	return op_sized_byte_array_header(bytes);
 }
 
-ByteWriter &ByteWriter::op(const std::string &str)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const std::string &str)
 {
 	return op(str.c_str(), str.size());
 }
-ByteWriter &ByteWriter::op(const std::string_view str)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const std::string_view str)
 {
-	return op(str.data(), str.size());
+	return op_byte_array((const uint8_t *)str.data(), str.size());
 }
-ByteWriter &ByteWriter::op(const char *str)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const char *str)
 {
-	return op(str, strlen(str));
+	return op_byte_array((const uint8_t *)str, strlen(str));
 }
-ByteWriter &ByteWriter::op(const char *str, uint32_t size)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const char *str, uint32_t size)
+{
+	return op_byte_array((const uint8_t *)str, size);
+}
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(char *str)
+{
+	return op_byte_array((const uint8_t *)str, strlen(str));
+}
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(char *str, uint32_t size)
 {
 	return op_byte_array((const uint8_t *)str, size);
 }
 
-ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_byte_array(const uint8_t *data, uint32_t bytes)
 {
 	_reserve_expand(bytes + 6);
 	op_sized_byte_array_header(bytes);
 	_append(data, bytes);
 	return *this;
 }
-ByteWriter &ByteWriter::op_byte_array(const std::vector<uint8_t> &data)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_byte_array(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data.data(), data.size());
 }
-ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data);
 }
-ByteWriter &ByteWriter::op_byte_array(const std::vector<char> &data)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_byte_array(const std::vector<char> &data)
 {
 	return op_byte_array((const uint8_t*)data.data(), data.size());
 }
-ByteWriter &ByteWriter::op(const std::vector<char> &data)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(const std::vector<char> &data)
 {
 	return op_byte_array(data);
 }
 
-ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
-ByteWriter &ByteWriter::op_boolean(bool v)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(bool v) { return op_boolean(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_boolean(bool v)
 {
 	_append_byte(v ? BOOLEAN_TRUE : BOOLEAN_FALSE);
 	return *this;
 }
-ByteWriter &ByteWriter::op_false() { return op_boolean(false); }
-ByteWriter &ByteWriter::op_true() { return op_boolean(true); }
-ByteWriter &ByteWriter::op_begin_object()
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_false() { return op_boolean(false); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_true() { return op_boolean(true); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_begin_object()
 {
 	_append_byte(BEG_OBJECT);
 	return *this;
 }
-ByteWriter &ByteWriter::op_end_object()
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_end_object()
 {
 	_append_byte(END_OBJECT);
 	return *this;
 }
 
-ByteWriter &ByteWriter::op(uint8_t v) { return op_uint(v); }
-ByteWriter &ByteWriter::op(uint16_t v) { return op_uint(v); }
-ByteWriter &ByteWriter::op(uint32_t v) { return op_uint(v); }
-ByteWriter &ByteWriter::op(uint64_t v) { return op_uint(v); }
-ByteWriter &ByteWriter::op(int8_t v) { return op_int(v); }
-ByteWriter &ByteWriter::op(int16_t v) { return op_int(v); }
-ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
-ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
-ByteWriter &ByteWriter::op(char v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(uint8_t v) { return op_uint(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(uint16_t v) { return op_uint(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(uint32_t v) { return op_uint(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(uint64_t v) { return op_uint(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(int8_t v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(int16_t v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(int32_t v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(int64_t v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(char v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
-ByteWriter &ByteWriter::op_int(int64_t v)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_uint(uint64_t v) { return op_int(v); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_int(int64_t v)
 {
 	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
 		[[likely]];
@@ -143,14 +179,16 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 }
 
 // floats
-ByteWriter &ByteWriter::op_half(float value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_half(float value)
 {
 	uint8_t *p = _expand(3);
 	*p = BEG_HALF;
 	WriteBytesInNetworkOrder(p + 1, Float32ToFloat16(value), 2);
 	return *this;
 }
-ByteWriter &ByteWriter::op_bfloat(float value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_bfloat(float value)
 {
 	uint8_t *p = _expand(3);
 
@@ -178,9 +216,12 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 		return *this;
 	}
 }
-ByteWriter &ByteWriter::op(float value) { return op_float(value); }
-ByteWriter &ByteWriter::op(double value) { return op_double(value); }
-ByteWriter &ByteWriter::op_float(float value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(float value) { return op_float(value); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op(double value) { return op_double(value); }
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_float(float value)
 {
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
 	uint8_t *p = _expand(5);
@@ -188,7 +229,8 @@ ByteWriter &ByteWriter::op_float(float value)
 	WriteBytesInNetworkOrder(p + 1, bv32, 4);
 	return *this;
 }
-ByteWriter &ByteWriter::op_double(double value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_double(double value)
 {
 	const uint64_t bv64 = std::bit_cast<uint64_t>(value);
 	uint8_t *p = _expand(9);
@@ -197,7 +239,8 @@ ByteWriter &ByteWriter::op_double(double value)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_map_header(uint32_t elements)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_map_header(uint32_t elements)
 {
 	if (elements == 0) {
 		_append_byte(BEG_MAP_EMPTY);
@@ -209,7 +252,8 @@ ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_array_header(uint32_t elements)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_array_header(uint32_t elements)
 {
 	_reserve_expand(10);
 	if (elements <= IMMEDIATE_ARRAY_MAX_SIZE) { // size embeded in header
@@ -222,7 +266,8 @@ ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_untyped_var_uint(uint64_t value)
 {
 	if (value <= 0x7F) {
 		[[likely]];
@@ -260,7 +305,8 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 	}
 	return *this;
 }
-ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_untyped_var_int(int64_t value)
 {
 	const uint64_t uvalue = value;
 	const uint64_t sign = uvalue >> 63;
@@ -268,19 +314,23 @@ ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
 	return op_untyped_var_uint((abs << 1) | sign);
 }
 
-ByteWriter &ByteWriter::op_untyped_uint32(uint32_t v)
+template<typename BT>
+ByteWriter<BT> &ByteWriter<BT>::op_untyped_uint32(uint32_t v)
 {
 	uint8_t *ptr = _expand(4);
 	WriteBytesInNetworkOrder(ptr, v, 4);
 	return *this;
 }
 
-void ByteWriter::_append_byte(const uint8_t byte) { _buffer->push_back(byte); }
-void ByteWriter::_append(const uint8_t *data, uint32_t bytes)
+template<typename BT>
+void ByteWriter<BT>::_append_byte(const uint8_t byte) { _buffer->push_back(byte); }
+template<typename BT>
+void ByteWriter<BT>::_append(const uint8_t *data, uint32_t bytes)
 {
 	_buffer->write(data, bytes);
 }
-uint8_t *ByteWriter::_expand(size_t bytesToExpand)
+template<typename BT>
+uint8_t *ByteWriter<BT>::_expand(size_t bytesToExpand)
 {
 	size_t oldSize = _buffer->size();
 	size_t newSize = oldSize + bytesToExpand;
@@ -288,11 +338,13 @@ uint8_t *ByteWriter::_expand(size_t bytesToExpand)
 	_buffer->resize(newSize);
 	return _buffer->data() + oldSize;
 }
-void ByteWriter::_reserve_expand(size_t bytesToExpand)
+template<typename BT>
+void ByteWriter<BT>::_reserve_expand(size_t bytesToExpand)
 {
 	_reserve(_buffer->size() + bytesToExpand);
 }
-void ByteWriter::_reserve(size_t newCapacity)
+template<typename BT>
+void ByteWriter<BT>::_reserve(size_t newCapacity)
 {
 	if (_buffer->capacity() < newCapacity) {
 		[[unlikely]];
@@ -305,8 +357,10 @@ void ByteWriter::_reserve(size_t newCapacity)
 	}
 }
 
-Errors ByteWriter::get_errors() const { return (Errors)errors; }
-void ByteWriter::set_error(Errors error) { errors |= error; }
+template<typename BT>
+Errors ByteWriter<BT>::get_errors() const { return (Errors)errors; }
+template<typename BT>
+void ByteWriter<BT>::set_error(Errors error) { errors |= error; }
 
 } // namespace v2
 } // namespace bitscpp

@@ -8,16 +8,17 @@
 
 #include <cstdint>
 #include <cstring>
+#include <cassert>
 
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "VectorWrapper.hpp" // IWYU pragma: keep
+#include "V2_Specification.hpp"
 #include "SerizalizerClass.hpp"
 
 /*
- * BT_TYPE requires following interface:
+ * Type BT requires following interface:
  * class BT {
  *   uint8_t *data();
  *   size_t size();
@@ -31,25 +32,11 @@
  * behavior should be similar to std::vector<uint8_t>
  */
 
-#ifndef BITSCPP_BYTE_WRITER_V2_BT_TYPE
-#define BITSCPP_BYTE_WRITER_V2_BT_TYPE VectorWrapper
-#endif
-
-#ifndef BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX
-#define BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX _vector
-#endif
-
-#define BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT) LEFT##RIGHT
-#define BITSCPP_CONCATENATE_NAMES(LEFT, RIGHT)                                 \
-	BITSCPP_CONCATENATE_NAMES_(LEFT, RIGHT)
-
-#define ByteWriter                                                             \
-	BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-
 namespace bitscpp
 {
 namespace v2
 {
+template<typename BT>
 class ByteWriter
 {
 public:
@@ -57,9 +44,8 @@ public:
 	constexpr static bool READER = false;
 	constexpr static bool WRITER = true;
 
-	using BT = BITSCPP_BYTE_WRITER_V2_BT_TYPE;
-
-	inline constexpr ByteWriter &op(const auto &item)
+	template<typename TT>
+	inline constexpr ByteWriter &op(const TT &item)
 	{
 		using T = std::remove_cvref_t<decltype(item)>;
 		if constexpr (requires { item.serialize(*this); }) {
@@ -69,14 +55,14 @@ public:
 			static_assert(!"Consider removing this branch");
 			((T &)item).serialize(*this);
 		} else if constexpr (requires {
-								 serializer<ByteWriter, T>::op(*this, item);
+				bitscpp::serializer<ByteWriter<BT>, T>::op(*this, item);
 							 }) {
-			serializer<ByteWriter, T>::op(*this, item);
+			bitscpp::serializer<ByteWriter<BT>, T>::op(*this, item);
 		} else if constexpr (requires {
-								 serializer<ByteWriter, T>::op(*this,
+								 bitscpp::serializer<ByteWriter<BT>, T>::op(*this,
 															   (T &)item);
 							 }) {
-			serializer<ByteWriter, T>::op(*this, (T &)item);
+			bitscpp::serializer<ByteWriter<BT>, T>::op(*this, (T &)item);
 		} else if constexpr (requires { serialize(*this, item); }) {
 			serialize(*this, item);
 		} else if constexpr (requires { serialize(*this, *(T *)&item); }) {
@@ -110,6 +96,8 @@ public:
 	ByteWriter &op(const std::string_view str);
 	ByteWriter &op(char const *str);
 	ByteWriter &op(char const *str, uint32_t size);
+	ByteWriter &op(char *str);
+	ByteWriter &op(char *str, uint32_t size);
 
 	// constant size byte array
 	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
@@ -204,7 +192,5 @@ public:
 
 } // namespace v2
 } // namespace bitscpp
-
-#undef ByteWriter
 
 #endif

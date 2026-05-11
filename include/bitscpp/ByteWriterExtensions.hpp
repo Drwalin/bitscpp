@@ -10,7 +10,7 @@
 #include <unordered_set>
 
 #include "ByteWriter.hpp"
-#include "ByteWriter_v2.hpp"
+#include "ByteWriter_v2.hpp" // IWYU pragma: export
 
 namespace bitscpp {
 	template<typename BT, typename T>
@@ -28,10 +28,13 @@ namespace bitscpp {
 		return s;
 	}
 
-#define ByteWriter_v2 v2::BITSCPP_CONCATENATE_NAMES(ByteWriter, BITSCPP_BYTE_WRITER_V2_NAME_SUFFIX)
-template<typename T>
-struct serializer<ByteWriter_v2, std::set<T>> {
-	static inline void op(ByteWriter_v2& s, const std::set<T>& set) {
+
+// template<typename BT, typename T>
+// void serialize(v2::ByteWriter<icon7::ByteBufferWritable> &s, const icon7::time::Timestamp &v)
+
+template<typename BT, typename T>
+struct serializer<v2::ByteWriter<BT>, std::set<T>> {
+	static inline void op(v2::ByteWriter<BT>& s, const std::set<T>& set) {
 		assert(set.size() <= v2::MAX_ARRAY_ELEMENTS);
 		if (set.size() > v2::MAX_ARRAY_ELEMENTS) {
 			s.set_error(v2::ERROR_ARRAY_TOO_BIG);
@@ -42,9 +45,9 @@ struct serializer<ByteWriter_v2, std::set<T>> {
 			s.op(v);
 	}
 };
-template<typename T>
-struct serializer<ByteWriter_v2, std::unordered_set<T>> {
-	static inline void op(ByteWriter_v2& s, const std::unordered_set<T>& set) {
+template<typename BT, typename T>
+struct serializer<v2::ByteWriter<BT>, std::unordered_set<T>> {
+	static inline void op(v2::ByteWriter<BT>& s, const std::unordered_set<T>& set) {
 		assert(set.size() <= v2::MAX_ARRAY_ELEMENTS);
 		if (set.size() > v2::MAX_ARRAY_ELEMENTS) {
 			s.set_error(v2::ERROR_ARRAY_TOO_BIG);
@@ -55,7 +58,6 @@ struct serializer<ByteWriter_v2, std::unordered_set<T>> {
 			s.op(v);
 	}
 };
-#undef ByteWriter_v2
 } // namespace bitscpp
 
 #endif
