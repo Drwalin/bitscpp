@@ -57,9 +57,57 @@ public:
 			set_error(ERROR_BUFFER_NULLPTR);
 		}
 	}
+
 	inline ByteReader(const uint8_t *buffer, uint32_t size)
 		: ByteReader(buffer, 0, size)
 	{
+	}
+
+	inline ByteReader(const ByteReader &o)
+	{
+		_buffer = o._buffer;
+		ptr = o.ptr;
+		end = o.end;
+		total_size = o.total_size;
+		errors = o.errors;
+	}
+
+	inline ByteReader(ByteReader &o)
+	{
+		_buffer = o._buffer;
+		ptr = o.ptr;
+		end = o.end;
+		total_size = o.total_size;
+		errors = o.errors;
+	}
+
+	inline ByteReader(ByteReader &&o)
+	{
+		_buffer = o._buffer;
+		ptr = o.ptr;
+		end = o.end;
+		total_size = o.total_size;
+		errors = o.errors;
+		o._buffer = nullptr;
+		o.ptr = nullptr;
+		o.end = nullptr;
+		o.total_size = 0;
+		o.errors = 0;
+	}
+
+	inline ByteReader &operator=(const ByteReader &o)
+	{
+		return *new (this) ByteReader(o);
+	}
+
+	inline ByteReader &operator=(ByteReader &o)
+	{
+		return *new (this) ByteReader(o);
+	}
+
+	inline ByteReader &operator=(ByteReader &&o)
+	{
+		return *new (this) ByteReader(std::move(o));
 	}
 
 public:

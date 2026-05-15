@@ -87,6 +87,22 @@ public:
 	inline void Init(BT *buffer) { _buffer = buffer; }
 	inline ByteWriter() { Init(nullptr); }
 	inline ByteWriter(BT *buffer) { Init(buffer); }
+	inline ByteWriter(ByteWriter &&o) : _buffer(o._buffer), errors(o.errors)
+	{
+		o._buffer = nullptr;
+		o.errors = 0;
+	}
+	inline ByteWriter &operator=(ByteWriter &&o)
+	{
+		_buffer = o._buffer;
+		errors = o.errors;
+		o._buffer = nullptr;
+		o.errors = 0;
+	}
+	ByteWriter(ByteWriter &o) = delete;
+	ByteWriter(const ByteWriter &o) = delete;
+	ByteWriter &operator=(ByteWriter &o) = delete;
+	ByteWriter &operator=(const ByteWriter &o) = delete;
 
 	// strings
 	ByteWriter &op_sized_byte_array_header(uint32_t bytes);
