@@ -12,6 +12,7 @@
 #include <string_view>
 #include <vector>
 
+#include "BitscppForward.hpp" // IWYU pragma: keep
 #include "V2_Specification.hpp"
 #include "SerizalizerClass.hpp"
 
@@ -268,4 +269,8 @@ protected:
 } // namespace v2
 } // namespace bitscpp
 
+#endif
+
+#ifdef BITSCPP_ENABLE_INLINE_V2
+#include "../../src/ByteReader_v2.cpp"
 #endif

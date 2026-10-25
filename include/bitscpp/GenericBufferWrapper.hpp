@@ -9,67 +9,45 @@
 #include <cstdint>
 #include <cstdlib>
 
+#include "BitscppForward.hpp"
+#include "GenericBufferWriterPimpl.hpp"
+
 namespace bitscpp
 {
-struct GenericBufferWriter;
-
 /*
  * Example usage 1:
  * 
  * UnderlyingBuffer under_buf{...};
- * static GenericBufferWriterImpl impl{...};
+ * static GenericBufferWriterPimpl impl{...};
  * GenericBufferWriter buffer(&under_buf, impl);
- * v3::ByteWriter writer(std::move(buffer));
+ * v2_2::ByteWriter writer(std::move(buffer));
  * // do writes here
  * buffer = writer.release_buffer();
  * ((ignore_ret_value)) buffer.release_buffer();
  * 
  * now under_buf is filled and ready to use
- */
-
-/*
+ * 
+ * 
  * Example usage 2:
  * 
- * static GenericBufferWriterImpl impl{...};
+ * static GenericBufferWriterPimpl impl{...};
  * GenericBufferWriter buffer(impl);
- * v3::ByteWriter writer(std::move(buffer));
+ * v2_2::ByteWriter writer(std::move(buffer));
  * // do writes here
  * buffer = writer.release_buffer();
  * UnderlyingBuffer *under_buf = buffer.release_buffer();
  * 
  * now *under_buf is filled and ready to use
  */
-
-struct GenericBufferWriterImpl {
-	// Construct underlying buffer if it is not present.
-	// Guarantees range head..end points to range of at least minimum bytes
-	// available, up to a hint.
-	// Sets head and end pointers.
-	// Due to performance reasons and possible implementation optimizations,
-	// maximum of smallest guaranteed available range is 255 
-	void (*expand)(GenericBufferWriter *buffer, uint8_t minimum, size_t hint) = nullptr;
-
-	// destructs and deallocates underlying buffer - caller needs to take care
-	// of wether object is allocated on stack or heap.
-	void (*destructor)(GenericBufferWriter *buffer) = nullptr;
-
-	// Releases underlying buffer from GenericBufferWriter. After call
-	// underlying buffer needs to be returned, and:
-	// buffer, head and end need to be set to nullptr by GenericBufferWriter.
-	void (*apply_head_end_to_underlying)(GenericBufferWriter *buffer) = nullptr;
-};
-
 struct GenericBufferWriter {
-	static GenericBufferWriterImpl DEFAULT_STD_VECTOR;
-
 	/*
 	 * Takes ownership of buffer. If buffer is allocated on the stack, then
 	 * caller needs to guarantee that impl.destructor does not deallocates
 	 * *buffer.
 	 */
-	GenericBufferWriter(void *buffer, GenericBufferWriterImpl impl);
+	GenericBufferWriter(void *buffer, GenericBufferWriterPimpl impl);
 
-	GenericBufferWriter(GenericBufferWriterImpl impl);
+	GenericBufferWriter(GenericBufferWriterPimpl impl);
 	GenericBufferWriter(const GenericBufferWriter&) = delete;
 	GenericBufferWriter(GenericBufferWriter&) = delete;
 	GenericBufferWriter(GenericBufferWriter&&);
@@ -101,7 +79,7 @@ private:
 	void append_slow(const uint8_t *data, size_t bytes) noexcept;
 
 public:
-	GenericBufferWriterImpl impl;
+	GenericBufferWriterPimpl impl;
 	// pointer to underlying buffer
 	void *buffer = nullptr;
 	// pointer to the begining of available range, increment to mark data used.
@@ -111,4 +89,8 @@ public:
 };
 } // namespace bitscpp
 
+#endif
+
+#ifdef BITSCPP_ENABLE_INLINE_V2
+#include "../../src/GenericBufferWrapper.cpp"
 #endif

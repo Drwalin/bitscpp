@@ -3,6 +3,15 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
+
+#ifndef BITSCPP_BYTE_READER_V2_CPP
+#define BITSCPP_BYTE_READER_V2_CPP
+
+#if not defined BITSCPP_INLINE
+#define BITSCPP_NO_INLINE_CPP_BYTE_READER_V2
+#endif
+
 #include <cassert>
 #include <cstdint>
 
@@ -16,15 +25,20 @@
 
 #include "../include/bitscpp/ByteReader_v2.hpp"
 
+#if defined BITSCPP_NO_INLINE_CPP_BYTE_READER_V2
+#undef BITSCPP_INLINE
+#define BITSCPP_INLINE
+#endif
+
 namespace bitscpp
 {
 namespace v2
 {
-Type ByteReader::get_next_type() const
+BITSCPP_INLINE Type ByteReader::get_next_type() const
 {
 	return (Type)((uint8_t)get_next_detailed_type() & 0x1F);
 }
-Type ByteReader::get_next_detailed_type() const
+BITSCPP_INLINE Type ByteReader::get_next_detailed_type() const
 {
 	if (ptr >= end) {
 		[[unlikely]];
@@ -34,57 +48,58 @@ Type ByteReader::get_next_detailed_type() const
 	}
 }
 
-bool ByteReader::is_next_integer() const
+BITSCPP_INLINE bool ByteReader::is_next_integer() const
 {
 	return get_next_detailed_type() == V2_INT;
 }
-bool ByteReader::is_next_floating_point() const
+BITSCPP_INLINE bool ByteReader::is_next_floating_point() const
 {
 	return get_next_type() == V2_FLOAT;
 }
-bool ByteReader::is_next_float16() const
+BITSCPP_INLINE bool ByteReader::is_next_float16() const
 {
 	return get_next_detailed_type() == V2_DETAIL_HALF;
 }
-bool ByteReader::is_next_bfloat16() const
+BITSCPP_INLINE bool ByteReader::is_next_bfloat16() const
 {
 	return get_next_detailed_type() == V2_DETAIL_BFLOAT;
 }
-bool ByteReader::is_next_float32() const
+BITSCPP_INLINE bool ByteReader::is_next_float32() const
 {
 	return get_next_detailed_type() == V2_FLOAT;
 }
-bool ByteReader::is_next_float64() const
+BITSCPP_INLINE bool ByteReader::is_next_float64() const
 {
 	return get_next_detailed_type() == V2_DETAIL_DOUBLE;
 }
-bool ByteReader::is_next_bool() const
+BITSCPP_INLINE bool ByteReader::is_next_bool() const
 {
 	return get_next_detailed_type() == V2_BOOLEAN;
 }
-bool ByteReader::is_next_string() const
+BITSCPP_INLINE bool ByteReader::is_next_string() const
 {
 	return get_next_detailed_type() == V2_STRING;
 }
-bool ByteReader::is_next_map() const
+BITSCPP_INLINE bool ByteReader::is_next_map() const
 {
 	return get_next_detailed_type() == V2_MAP;
 }
-bool ByteReader::is_next_array() const
+BITSCPP_INLINE bool ByteReader::is_next_array() const
 {
 	return get_next_detailed_type() == V2_ARRAY;
 }
-bool ByteReader::is_next_beg_object() const
+BITSCPP_INLINE bool ByteReader::is_next_beg_object() const
 {
 	return get_next_detailed_type() == V2_OBJECT_BEGIN;
 }
-bool ByteReader::is_next_end_object() const
+BITSCPP_INLINE bool ByteReader::is_next_end_object() const
 {
 	return get_next_detailed_type() == V2_OBJECT_END;
 }
 
 // strings
-ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
+BITSCPP_INLINE ByteReader &
+ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -125,19 +140,19 @@ ByteReader &ByteReader::op_sized_byte_array_header(uint32_t &bytes)
 
 	return *this;
 }
-ByteReader &ByteReader::op_sized_string_header(uint32_t &bytes)
+BITSCPP_INLINE ByteReader &ByteReader::op_sized_string_header(uint32_t &bytes)
 {
 	return op_sized_byte_array_header(bytes);
 }
 
-ByteReader &ByteReader::op(std::string &str)
+BITSCPP_INLINE ByteReader &ByteReader::op(std::string &str)
 {
 	std::string_view sv;
 	op(sv);
 	str = sv;
 	return *this;
 }
-ByteReader &ByteReader::op(std::string_view &str)
+BITSCPP_INLINE ByteReader &ByteReader::op(std::string_view &str)
 {
 	uint32_t size = 0;
 	op_sized_string_header(size);
@@ -155,12 +170,13 @@ ByteReader &ByteReader::op(std::string_view &str)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op_byte_array(char const **str, uint32_t &size)
+BITSCPP_INLINE ByteReader &ByteReader::op_byte_array(char const **str,
+													 uint32_t &size)
 {
 	assert(str);
 	return op(*str, size);
 }
-ByteReader &ByteReader::op(char const *&str, uint32_t &size)
+BITSCPP_INLINE ByteReader &ByteReader::op(char const *&str, uint32_t &size)
 {
 	std::string_view sv;
 	op(sv);
@@ -170,17 +186,19 @@ ByteReader &ByteReader::op(char const *&str, uint32_t &size)
 }
 
 // byte array
-ByteReader &ByteReader::op_byte_array(uint8_t const **data, uint32_t &bytes)
+BITSCPP_INLINE ByteReader &ByteReader::op_byte_array(uint8_t const **data,
+													 uint32_t &bytes)
 {
 	assert(data);
 	return op_byte_array((char const **)data, bytes);
 }
-ByteReader &ByteReader::op_byte_array(uint8_t const *&data, uint32_t &bytes)
+BITSCPP_INLINE ByteReader &ByteReader::op_byte_array(uint8_t const *&data,
+													 uint32_t &bytes)
 {
 	uint8_t const **data_p = &data;
 	return op_byte_array(data_p, bytes);
 }
-ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
+BITSCPP_INLINE ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 {
 	data.clear();
 	std::string_view sv;
@@ -191,11 +209,11 @@ ByteReader &ByteReader::op_byte_array(std::vector<uint8_t> &data)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(std::vector<uint8_t> &data)
+BITSCPP_INLINE ByteReader &ByteReader::op(std::vector<uint8_t> &data)
 {
 	return op_byte_array(data);
 }
-ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
+BITSCPP_INLINE ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
 {
 	data.clear();
 	std::string_view sv;
@@ -206,14 +224,14 @@ ByteReader &ByteReader::op_byte_array(std::vector<char> &data)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(std::vector<char> &data)
+BITSCPP_INLINE ByteReader &ByteReader::op(std::vector<char> &data)
 {
 	return op_byte_array(data);
 }
 
 // miscelanous
-ByteReader &ByteReader::op(bool &v) { return op_boolean(v); }
-ByteReader &ByteReader::op_boolean(bool &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(bool &v) { return op_boolean(v); }
+BITSCPP_INLINE ByteReader &ByteReader::op_boolean(bool &v)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -233,7 +251,7 @@ ByteReader &ByteReader::op_boolean(bool &v)
 	errors |= ERROR_TYPE_MISMATCH;
 	return *this;
 }
-ByteReader &ByteReader::op_begin_object()
+BITSCPP_INLINE ByteReader &ByteReader::op_begin_object()
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -248,7 +266,7 @@ ByteReader &ByteReader::op_begin_object()
 	}
 	return *this;
 }
-ByteReader &ByteReader::op_end_object()
+BITSCPP_INLINE ByteReader &ByteReader::op_end_object()
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -265,7 +283,7 @@ ByteReader &ByteReader::op_end_object()
 }
 
 // integers
-ByteReader &ByteReader::op(uint8_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(uint8_t &v)
 {
 	uint64_t vv = 0;
 	op_uint(vv);
@@ -275,7 +293,7 @@ ByteReader &ByteReader::op(uint8_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(uint16_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(uint16_t &v)
 {
 	uint64_t vv = 0;
 	op_uint(vv);
@@ -285,7 +303,7 @@ ByteReader &ByteReader::op(uint16_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(uint32_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(uint32_t &v)
 {
 	uint64_t vv = 0;
 	op_uint(vv);
@@ -295,7 +313,7 @@ ByteReader &ByteReader::op(uint32_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(uint64_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(uint64_t &v)
 {
 	uint64_t vv = 0;
 	op_uint(vv);
@@ -305,7 +323,7 @@ ByteReader &ByteReader::op(uint64_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(int8_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(int8_t &v)
 {
 	int64_t vv = 0;
 	op_int(vv);
@@ -315,7 +333,7 @@ ByteReader &ByteReader::op(int8_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(int16_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(int16_t &v)
 {
 	int64_t vv = 0;
 	op_int(vv);
@@ -325,7 +343,7 @@ ByteReader &ByteReader::op(int16_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(int32_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(int32_t &v)
 {
 	int64_t vv = 0;
 	op_int(vv);
@@ -335,7 +353,7 @@ ByteReader &ByteReader::op(int32_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(int64_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(int64_t &v)
 {
 	int64_t vv = 0;
 	op_int(vv);
@@ -345,7 +363,7 @@ ByteReader &ByteReader::op(int64_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(char &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(char &v)
 {
 	int64_t vv = 0;
 	op_int(vv);
@@ -356,20 +374,21 @@ ByteReader &ByteReader::op(char &v)
 	return *this;
 }
 
-ByteReader &ByteReader::op_uint(uint64_t &v) {
+BITSCPP_INLINE ByteReader &ByteReader::op_uint(uint64_t &v)
+{
 	int64_t vv = 0;
 	op_int(vv);
 	v = vv;
 	return *this;
 }
-ByteReader &ByteReader::op_int(int64_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_int(int64_t &v)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
 		errors |= ERROR_BUFFER_TOO_SMALL;
 		return *this;
 	}
-	
+
 	const uint8_t header = *ptr;
 	++ptr;
 	uint64_t vv = 0;
@@ -404,18 +423,18 @@ ByteReader &ByteReader::op_int(int64_t &v)
 		errors |= ERROR_TYPE_MISMATCH;
 		return *this;
 	}
-	
+
 	const uint64_t sign = ((int64_t)(vv << 63)) >> 63;
 	assert((vv & 1) ? sign == -1ll : sign == 0);
 	const uint64_t abs = vv >> 1;
 	v = sign ^ abs;
 	static_assert(-1ll == (-10000000ll >> 63));
-	
+
 	return *this;
 }
 
 // floats
-ByteReader &ByteReader::op_half(float &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_half(float &v)
 {
 	if (has_bytes_to_read(3) == false) {
 		[[unlikely]];
@@ -431,7 +450,7 @@ ByteReader &ByteReader::op_half(float &v)
 	ptr += 3;
 	return *this;
 }
-ByteReader &ByteReader::op_bfloat(float &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_bfloat(float &v)
 {
 	if (has_bytes_to_read(3) == false) {
 		[[unlikely]];
@@ -447,7 +466,7 @@ ByteReader &ByteReader::op_bfloat(float &v)
 	ptr += 3;
 	return *this;
 }
-ByteReader &ByteReader::op_float(float &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_float(float &v)
 {
 	if (has_bytes_to_read(5) == false) {
 		[[unlikely]];
@@ -463,7 +482,7 @@ ByteReader &ByteReader::op_float(float &v)
 	ptr += 5;
 	return *this;
 }
-ByteReader &ByteReader::op_double(double &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_double(double &v)
 {
 	if (has_bytes_to_read(9) == false) {
 		[[unlikely]];
@@ -479,7 +498,7 @@ ByteReader &ByteReader::op_double(double &v)
 	ptr += 9;
 	return *this;
 }
-ByteReader &ByteReader::op(float &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(float &v)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -534,7 +553,7 @@ ByteReader &ByteReader::op(float &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op(double &v)
+BITSCPP_INLINE ByteReader &ByteReader::op(double &v)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -591,29 +610,29 @@ ByteReader &ByteReader::op(double &v)
 	}
 	return *this;
 }
-void ByteReader::_read_half(const uint8_t *ptr, float &v)
+BITSCPP_INLINE void ByteReader::_read_half(const uint8_t *ptr, float &v)
 {
 	v = Float16ToFloat32(ReadBytesInNetworkOrder(ptr, 2));
 }
-void ByteReader::_read_bfloat(const uint8_t *ptr, float &v)
+BITSCPP_INLINE void ByteReader::_read_bfloat(const uint8_t *ptr, float &v)
 {
 	const uint16_t bfloat = ReadBytesInNetworkOrder(ptr, 2);
 	uint32_t ffloat = ((uint32_t)bfloat) << 16;
 	v = std::bit_cast<float>(ffloat);
 }
-void ByteReader::_read_float(const uint8_t *ptr, float &v)
+BITSCPP_INLINE void ByteReader::_read_float(const uint8_t *ptr, float &v)
 {
 	const uint32_t vv = ReadBytesInNetworkOrder(ptr, 4);
 	v = std::bit_cast<float>(vv);
 }
-void ByteReader::_read_double(const uint8_t *ptr, double &v)
+BITSCPP_INLINE void ByteReader::_read_double(const uint8_t *ptr, double &v)
 {
 	const uint64_t vv = ReadBytesInNetworkOrder(ptr, 8);
 	v = std::bit_cast<double>(vv);
 }
 
 // map
-ByteReader &ByteReader::op_map_header(uint32_t &elements)
+BITSCPP_INLINE ByteReader &ByteReader::op_map_header(uint32_t &elements)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -637,7 +656,7 @@ ByteReader &ByteReader::op_map_header(uint32_t &elements)
 			elements = 0;
 			return *this;
 		}
-		elements = size+1;
+		elements = size + 1;
 		if (has_bytes_to_read(elements) == false) {
 			set_error(ERROR_ARRAY_TOO_BIG);
 			set_error(ERROR_TYPE_MISMATCH);
@@ -651,10 +670,9 @@ ByteReader &ByteReader::op_map_header(uint32_t &elements)
 		errors |= ERROR_TYPE_MISMATCH;
 	}
 	return *this;
-
 }
 
-ByteReader &ByteReader::op_array_header(uint32_t &elements)
+BITSCPP_INLINE ByteReader &ByteReader::op_array_header(uint32_t &elements)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -663,7 +681,7 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 	}
 	const uint8_t header = *ptr;
 	++ptr;
-	
+
 	if (header < BEG_ARRAY_IMMEDIATE_SIZED) {
 		[[unlikely]];
 		errors |= ERROR_TYPE_MISMATCH;
@@ -700,7 +718,7 @@ ByteReader &ByteReader::op_array_header(uint32_t &elements)
 	return *this;
 }
 
-ByteReader &ByteReader::op_untyped_var_uint(uint64_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_untyped_var_uint(uint64_t &v)
 {
 	if (has_bytes_to_read(1) == false) {
 		[[unlikely]];
@@ -716,8 +734,8 @@ ByteReader &ByteReader::op_untyped_var_uint(uint64_t &v)
 			errors |= ERROR_BUFFER_TOO_SMALL;
 			return *this;
 		}
-		constexpr uint8_t masks[] = {0x7F, 0x3F, 0x1F, 0x0F,
-									 0x07, 0x03, 0x01, 0x00, 0x00};
+		constexpr uint8_t masks[] = {0x7F, 0x3F, 0x1F, 0x0F, 0x07,
+									 0x03, 0x01, 0x00, 0x00};
 		constexpr uint8_t shifts[] = {7, 6, 5, 4, 3, 2, 1, 0, 0};
 		v = ReadBytesInNetworkOrder(ptr, bytes) << shifts[bytes];
 		ptr += bytes;
@@ -727,7 +745,7 @@ ByteReader &ByteReader::op_untyped_var_uint(uint64_t &v)
 	}
 	return *this;
 }
-ByteReader &ByteReader::op_untyped_var_int(int64_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_untyped_var_int(int64_t &v)
 {
 	uint64_t vv = 0;
 	op_untyped_var_uint(vv);
@@ -737,7 +755,7 @@ ByteReader &ByteReader::op_untyped_var_int(int64_t &v)
 	v = vv;
 	return *this;
 }
-ByteReader &ByteReader::op_untyped_uint32(uint32_t &v)
+BITSCPP_INLINE ByteReader &ByteReader::op_untyped_uint32(uint32_t &v)
 {
 	if (has_bytes_to_read(4)) {
 		[[likely]];
@@ -749,7 +767,7 @@ ByteReader &ByteReader::op_untyped_uint32(uint32_t &v)
 	return *this;
 }
 
-ByteReader &ByteReader::skip(uint32_t bytes)
+BITSCPP_INLINE ByteReader &ByteReader::skip(uint32_t bytes)
 {
 	if (has_bytes_to_read(bytes) == false) {
 		[[unlikely]];
@@ -759,18 +777,23 @@ ByteReader &ByteReader::skip(uint32_t bytes)
 	ptr += bytes;
 	return *this;
 }
-bool ByteReader::is_valid() const { return errors == ERROR_OK; }
-Errors ByteReader::get_errors() const { return (Errors)errors; }
-bool ByteReader::has_any_more() const { return ptr != end; }
-uint32_t ByteReader::get_offset() const { return ptr - _buffer; }
-const uint8_t *ByteReader::get_buffer() const { return _buffer; }
-uint32_t ByteReader::get_remaining_bytes() const { return end - ptr; }
-bool ByteReader::has_bytes_to_read(uint32_t bytes) const
+BITSCPP_INLINE bool ByteReader::is_valid() const { return errors == ERROR_OK; }
+BITSCPP_INLINE Errors ByteReader::get_errors() const { return (Errors)errors; }
+BITSCPP_INLINE bool ByteReader::has_any_more() const { return ptr != end; }
+BITSCPP_INLINE uint32_t ByteReader::get_offset() const { return ptr - _buffer; }
+BITSCPP_INLINE const uint8_t *ByteReader::get_buffer() const { return _buffer; }
+BITSCPP_INLINE uint32_t ByteReader::get_remaining_bytes() const
+{
+	return end - ptr;
+}
+BITSCPP_INLINE bool ByteReader::has_bytes_to_read(uint32_t bytes) const
 {
 	return bytes <= end - ptr;
 }
 
-void ByteReader::set_error(Errors error) { errors |= error; }
+BITSCPP_INLINE void ByteReader::set_error(Errors error) { errors |= error; }
 
 } // namespace v2
 } // namespace bitscpp
+
+#endif

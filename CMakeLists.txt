@@ -8,6 +8,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BITSCPP_BUILD_TEST "Build bitscpp tests" ON)
 option(BITSCPP_ENABLE_LTO "Bitscpp enable LTO" ON)
+option(BITSCPP_INLINE_V2 "Bitscpp enable inline V2" ON)
+
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+	option(BITSCPP_INLINE_V2 "Bitscpp enable inline V2" OFF)
+endif()
+
+if(BITSCPP_INLINE_V2)
+	add_compile_definitions(BITSCPP_ENABLE_INLINE_V2=true)
+endif()
 
 if(BITSCPP_ENABLE_LTO)
 	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)

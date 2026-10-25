@@ -3,6 +3,9 @@
 #include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/ByteWriterExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/ByteWriter_v2.hpp"
+#include "../include/bitscpp/ByteReader_v2.hpp"
+#include "../include/bitscpp/ByteWriter_v2_2.hpp"
 #include "../src/ByteWriter_v2.inl.hpp"
 
 #include <iostream>

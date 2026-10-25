@@ -3,64 +3,41 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
+
+#ifndef BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
+#define BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
+
+#if not defined BITSCPP_INLINE
+#define BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
+#endif
+
 #include <cassert>
 #include <cstring>
 
-#include <vector>
-
 #include "../include/bitscpp/GenericBufferWrapper.hpp"
+
+#if defined BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
+#undef BITSCPP_INLINE
+#define BITSCPP_INLINE
+#endif
 
 namespace bitscpp
 {
-GenericBufferWriterImpl GenericBufferWriter::DEFAULT_STD_VECTOR {
-	+[](GenericBufferWriter *buffer, uint8_t minimum, size_t hint)
-	{
-		std::vector<uint8_t> *&b = *(std::vector<uint8_t>**)&(buffer->buffer);
-		if (b == nullptr) {
-			b = new std::vector<uint8_t>;
-		}
-		size_t oldSize = b->size();
-		
-		size_t newSize = b->size() + std::max<size_t>(minimum, hint);
-		if (newSize > b->capacity()) {
-			size_t newCap = std::max<size_t>(newSize + 64, b->capacity() * 3 / 2 + 64);
-			b->reserve(newCap);
-		}
-		b->resize(newSize);
-		buffer->head = b->data() + oldSize;
-		buffer->end = b->data() + newSize;
-	},
-	+[](GenericBufferWriter *buffer)
-	{
-		std::vector<uint8_t> *b = (std::vector<uint8_t>*)(buffer->buffer);
-		delete b;
-		buffer->buffer = nullptr;
-		buffer->head = nullptr;
-		buffer->end = nullptr;
-	},
-	+[](GenericBufferWriter *buffer)
-	{
-		std::vector<uint8_t> *&b = *(std::vector<uint8_t>**)&(buffer->buffer);
-		if (b == nullptr) {
-			return;
-		}
-		b->resize(b->size() - (buffer->end - buffer->head));
-		buffer->end = buffer->head;
-	}
-};
-
-GenericBufferWriter::GenericBufferWriter(GenericBufferWriterImpl impl)
+BITSCPP_INLINE
+GenericBufferWriter::GenericBufferWriter(GenericBufferWriterPimpl impl)
 	: impl(impl)
 {
 }
 
+BITSCPP_INLINE
 GenericBufferWriter::GenericBufferWriter(void *buffer,
-										 GenericBufferWriterImpl impl)
+										 GenericBufferWriterPimpl impl)
 	: impl(impl), buffer(buffer)
 {
 }
 
-GenericBufferWriter::GenericBufferWriter(GenericBufferWriter &&o)
+BITSCPP_INLINE GenericBufferWriter::GenericBufferWriter(GenericBufferWriter &&o)
 {
 	impl = o.impl;
 	buffer = o.buffer;
@@ -72,7 +49,8 @@ GenericBufferWriter::GenericBufferWriter(GenericBufferWriter &&o)
 	o.end = nullptr;
 }
 
-GenericBufferWriter &GenericBufferWriter::operator=(GenericBufferWriter &&o)
+BITSCPP_INLINE GenericBufferWriter &
+GenericBufferWriter::operator=(GenericBufferWriter &&o)
 {
 	if (buffer) {
 		assert(impl.destructor);
@@ -92,7 +70,7 @@ GenericBufferWriter &GenericBufferWriter::operator=(GenericBufferWriter &&o)
 	return *this;
 }
 
-GenericBufferWriter::~GenericBufferWriter()
+BITSCPP_INLINE GenericBufferWriter::~GenericBufferWriter()
 {
 	if (buffer) {
 		assert(impl.destructor);
@@ -103,7 +81,7 @@ GenericBufferWriter::~GenericBufferWriter()
 	}
 }
 
-void *GenericBufferWriter::release_buffer()
+BITSCPP_INLINE void *GenericBufferWriter::release_buffer()
 {
 	if (buffer == nullptr) {
 		return nullptr;
@@ -117,9 +95,10 @@ void *GenericBufferWriter::release_buffer()
 	return buf;
 }
 
-void GenericBufferWriter::append_byte(const uint8_t byte) noexcept
+BITSCPP_INLINE void
+GenericBufferWriter::append_byte(const uint8_t byte) noexcept
 {
-	if (head == end) {
+	if (head == end) [[unlikely]] {
 		expand(1)[0] = byte;
 	} else {
 		*head = byte;
@@ -127,11 +106,11 @@ void GenericBufferWriter::append_byte(const uint8_t byte) noexcept
 	}
 }
 
-void GenericBufferWriter::append(uint8_t const *data, size_t bytes) noexcept
+BITSCPP_INLINE void GenericBufferWriter::append(uint8_t const *data,
+												size_t bytes) noexcept
 {
 	size_t available = end - head;
-	if (available >= bytes) {
-		[[likely]];
+	if (available >= bytes) [[likely]] {
 		memcpy(head, data, bytes);
 		head += bytes;
 		return;
@@ -139,8 +118,8 @@ void GenericBufferWriter::append(uint8_t const *data, size_t bytes) noexcept
 	append_slow(data, bytes);
 }
 
-void GenericBufferWriter::append_slow(uint8_t const *data,
-									  size_t bytes) noexcept
+BITSCPP_INLINE void GenericBufferWriter::append_slow(uint8_t const *data,
+													 size_t bytes) noexcept
 {
 	const uint8_t *_end = data + bytes;
 	while (const size_t to_write = (_end - data)) {
@@ -159,12 +138,11 @@ void GenericBufferWriter::append_slow(uint8_t const *data,
 	}
 }
 
-uint8_t *GenericBufferWriter::expand(uint8_t bytes) noexcept
+BITSCPP_INLINE uint8_t *GenericBufferWriter::expand(uint8_t bytes) noexcept
 {
 	uint8_t *ret = head;
 	head += bytes;
-	if (head > end) {
-		[[unlikely]];
+	if (head > end) [[unlikely]] {
 		head -= bytes;
 		impl.expand(this, bytes, bytes);
 		ret = head;
@@ -173,11 +151,13 @@ uint8_t *GenericBufferWriter::expand(uint8_t bytes) noexcept
 	return ret;
 }
 
-void GenericBufferWriter::expand_hint(size_t hint_bytes_to_expand) noexcept
+BITSCPP_INLINE void
+GenericBufferWriter::expand_hint(size_t hint_bytes_to_expand) noexcept
 {
-	if ((head + hint_bytes_to_expand) > end) {
-		[[unlikely]];
+	if ((head + hint_bytes_to_expand) > end) [[unlikely]] {
 		impl.expand(this, 1, hint_bytes_to_expand);
 	}
 }
 } // namespace bitscpp
+
+#endif

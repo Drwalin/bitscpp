@@ -14,9 +14,16 @@
 #include <string_view>
 #include <vector>
 
+#include "BitscppForward.hpp"
 #include "V2_Specification.hpp"
 #include "SerizalizerClass.hpp"
 #include "GenericBufferWrapper.hpp"
+
+#if defined BITSCPP_INLINE_BOOL
+#  warning INLINE ............ 
+# else
+#  warning NO INLINE ............
+# endif
 
 namespace bitscpp
 {
@@ -33,9 +40,9 @@ using TypeHeader_ImmediateIntegerRanges = v2::TypeHeader_ImmediateIntegerRanges;
 class ByteWriter
 {
 public:
-	constexpr static int VERSION = 2;
-	constexpr static bool READER = false;
-	constexpr static bool WRITER = true;
+	inline constexpr static int VERSION = 2;
+	inline constexpr static bool READER = false;
+	inline constexpr static bool WRITER = true;
 
 	template<typename TT>
 	inline constexpr ByteWriter &op(const TT &item)
@@ -70,91 +77,80 @@ public:
 	}
 
 public:
-	inline void Init(GenericBufferWriter &&buf) { _buffer = std::move(buf); }
-	inline ByteWriter(GenericBufferWriterImpl impl) : _buffer(impl) { Init({impl}); }
-	inline ByteWriter(GenericBufferWriter &&buf) : _buffer(std::move(buf)) {}
-	inline ByteWriter(ByteWriter &&o) : _buffer(std::move(o._buffer)), errors(o.errors)
-	{
-		o._buffer = {{}};
-		o.errors = 0;
-	}
-	inline ByteWriter &operator=(ByteWriter &&o)
-	{
-		_buffer = std::move(o._buffer);
-		errors = o.errors;
-		o._buffer = {{}};
-		o.errors = 0;
-		return *this;
-	}
+	BITSCPP_INLINE void Init(GenericBufferWriter &&buf);
+	BITSCPP_INLINE ByteWriter(GenericBufferWriterPimpl impl);
+	BITSCPP_INLINE ByteWriter(GenericBufferWriter &&buf);
+	BITSCPP_INLINE ByteWriter(ByteWriter &&o);
+	BITSCPP_INLINE ByteWriter &operator=(ByteWriter &&o);
 
-	void *release_buffer_impl();
+	BITSCPP_INLINE void *release_buffer_impl();
 
-	ByteWriter(ByteWriter &o) = delete;
-	ByteWriter(const ByteWriter &o) = delete;
-	ByteWriter &operator=(ByteWriter &o) = delete;
-	ByteWriter &operator=(const ByteWriter &o) = delete;
+	BITSCPP_INLINE ByteWriter(ByteWriter &o) = delete;
+	BITSCPP_INLINE ByteWriter(const ByteWriter &o) = delete;
+	BITSCPP_INLINE ByteWriter &operator=(ByteWriter &o) = delete;
+	BITSCPP_INLINE ByteWriter &operator=(const ByteWriter &o) = delete;
 
 	// strings
-	ByteWriter &op_sized_byte_array_header(uint32_t bytes);
-	ByteWriter &op_sized_string_header(uint32_t bytes);
+	BITSCPP_INLINE ByteWriter &op_sized_byte_array_header(uint32_t bytes);
+	BITSCPP_INLINE ByteWriter &op_sized_string_header(uint32_t bytes);
 
-	ByteWriter &op(const std::string &str);
-	ByteWriter &op(const std::string_view str);
-	ByteWriter &op(char const *str);
-	ByteWriter &op(char const *str, uint32_t size);
-	ByteWriter &op(char *str);
-	ByteWriter &op(char *str, uint32_t size);
+	BITSCPP_INLINE ByteWriter &op(const std::string &str);
+	BITSCPP_INLINE ByteWriter &op(const std::string_view str);
+	BITSCPP_INLINE ByteWriter &op(char const *str);
+	BITSCPP_INLINE ByteWriter &op(char const *str, uint32_t size);
+	BITSCPP_INLINE ByteWriter &op(char *str);
+	BITSCPP_INLINE ByteWriter &op(char *str, uint32_t size);
 
 	// constant size byte array
-	ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
-	ByteWriter &op_byte_array(const std::vector<uint8_t> &data);
-	ByteWriter &op(const std::vector<uint8_t> &data);
-	ByteWriter &op_byte_array(const std::vector<char> &data);
-	ByteWriter &op(const std::vector<char> &data);
+	BITSCPP_INLINE ByteWriter &op_byte_array(const uint8_t *data, uint32_t bytes);
+	BITSCPP_INLINE ByteWriter &op_byte_array(const std::vector<uint8_t> &data);
+	BITSCPP_INLINE ByteWriter &op(const std::vector<uint8_t> &data);
+	BITSCPP_INLINE ByteWriter &op_byte_array(const std::vector<char> &data);
+	BITSCPP_INLINE ByteWriter &op(const std::vector<char> &data);
 
 	// miscelanous
-	ByteWriter &op(bool v);
-	ByteWriter &op_boolean(bool v);
-	ByteWriter &op_false();
-	ByteWriter &op_true();
-	ByteWriter &op_begin_object();
-	ByteWriter &op_end_object();
+	BITSCPP_INLINE ByteWriter &op(bool v);
+	BITSCPP_INLINE ByteWriter &op_boolean(bool v);
+	BITSCPP_INLINE ByteWriter &op_false();
+	BITSCPP_INLINE ByteWriter &op_true();
+	BITSCPP_INLINE ByteWriter &op_begin_object();
+	BITSCPP_INLINE ByteWriter &op_end_object();
 
 	// integers
-	ByteWriter &op(uint8_t v);
-	ByteWriter &op(uint16_t v);
-	ByteWriter &op(uint32_t v);
-	ByteWriter &op(uint64_t v);
-	ByteWriter &op(int8_t v);
-	ByteWriter &op(int16_t v);
-	ByteWriter &op(int32_t v);
-	ByteWriter &op(int64_t v);
-	ByteWriter &op(char v);
+	BITSCPP_INLINE ByteWriter &op(uint8_t v);
+	BITSCPP_INLINE ByteWriter &op(uint16_t v);
+	BITSCPP_INLINE ByteWriter &op(uint32_t v);
+	BITSCPP_INLINE ByteWriter &op(uint64_t v);
+	BITSCPP_INLINE ByteWriter &op(int8_t v);
+	BITSCPP_INLINE ByteWriter &op(int16_t v);
+	BITSCPP_INLINE ByteWriter &op(int32_t v);
+	BITSCPP_INLINE ByteWriter &op(int64_t v);
+	BITSCPP_INLINE ByteWriter &op(char v);
 
-	ByteWriter &op_uint(uint64_t v);
-	ByteWriter &op_int(int64_t v);
+	BITSCPP_INLINE ByteWriter &op_uint(uint64_t v);
+	BITSCPP_INLINE ByteWriter &op_int(int64_t v);
 
 	// floats
-	ByteWriter &op_half(float value);
-	ByteWriter &op_bfloat(float value);
-	ByteWriter &op_float(float value);
-	ByteWriter &op_double(double value);
-	ByteWriter &op(float value);
-	ByteWriter &op(double value);
+	BITSCPP_INLINE ByteWriter &op_half(float value);
+	BITSCPP_INLINE ByteWriter &op_bfloat(float value);
+	BITSCPP_INLINE ByteWriter &op_float(float value);
+	BITSCPP_INLINE ByteWriter &op_double(double value);
+	BITSCPP_INLINE ByteWriter &op(float value);
+	BITSCPP_INLINE ByteWriter &op(double value);
 
 	// map
-	ByteWriter &op_map_header(uint32_t elements);
+	BITSCPP_INLINE ByteWriter &op_map_header(uint32_t elements);
 
 	// array
-	ByteWriter &op_array_header(uint32_t elements);
+	BITSCPP_INLINE ByteWriter &op_array_header(uint32_t elements);
 
-	ByteWriter &op_untyped_var_uint(uint64_t value);
-	ByteWriter &op_untyped_var_int(int64_t value);
+	BITSCPP_INLINE ByteWriter &op_untyped_var_uint(uint64_t value);
+	BITSCPP_INLINE ByteWriter &op_untyped_var_int(int64_t value);
 
-	ByteWriter &op_untyped_uint32(uint32_t value);
+	BITSCPP_INLINE ByteWriter &op_untyped_uint32(uint32_t value);
 
-	void set_error(Errors error);
-	Errors get_errors() const;
+	BITSCPP_INLINE void set_error(Errors error);
+	BITSCPP_INLINE Errors get_errors() const;
 
 public:
 	template <typename T>
@@ -183,12 +179,12 @@ public:
 	}
 
 private:
-	void _append_byte(const uint8_t byte);
-	void _append(const uint8_t *data, uint32_t bytes);
+	BITSCPP_INLINE void _append_byte(const uint8_t byte);
+	BITSCPP_INLINE void _append(const uint8_t *data, uint32_t bytes);
 
 private:
-	uint8_t *_expand(uint8_t bytesToExpand);
-	void _reserve_expand(size_t bytesToExpand);
+	BITSCPP_INLINE uint8_t *_expand(uint8_t bytesToExpand);
+	BITSCPP_INLINE void _reserve_expand(size_t bytesToExpand);
 
 private:
 	GenericBufferWriter _buffer;
@@ -198,4 +194,8 @@ private:
 } // namespace v2_2
 } // namespace bitscpp
 
+#endif
+
+#ifdef BITSCPP_ENABLE_INLINE_V2
+#include "../../src/ByteWriter_v2_2.cpp"
 #endif

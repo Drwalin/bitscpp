@@ -3,6 +3,17 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
+
+#ifndef BITSCPP_BYTE_WRITER_V2_2_CPP
+#define BITSCPP_BYTE_WRITER_V2_2_CPP
+
+#if not defined BITSCPP_INLINE
+#warning MAIN SOURCE FILE
+#define BITSCPP_NO_INLINE_CPP_BYTE_WRITER_V2_2
+#else
+#warning INCLUDED SOURCE FILE
+
 #include <cassert>
 #include <cstring>
 
@@ -13,18 +24,71 @@
 
 #include "../include/bitscpp/ByteWriter_v2_2.hpp"
 
+#if defined BITSCPP_NO_INLINE_CPP_BYTE_WRITER_V2_2
+# undef BITSCPP_INLINE
+# define BITSCPP_INLINE
+# warning NO INLINE
+#else
+# if defined BITSCPP_INLINE_BOOL
+#  warning INLINE
+# else
+#  warning NO INLINE
+# endif
+#endif
+
+#ifdef BITSCPP_INLINE
+#warning DEFINED INLINE
+#else
+#warning NOT DEFINED INLINE
+#endif
+
+BITSCPP_INLINE inline void asdf() {}
+
 namespace bitscpp
 {
 namespace v2_2
 {
 using namespace bitscpp::v2;
 
-void *ByteWriter::release_buffer_impl()
+BITSCPP_INLINE void ByteWriter::Init(GenericBufferWriter &&buf)
+{
+	_buffer = std::move(buf);
+}
+
+BITSCPP_INLINE ByteWriter::ByteWriter(GenericBufferWriterPimpl impl)
+	: _buffer(impl)
+{
+	Init({impl});
+}
+
+BITSCPP_INLINE ByteWriter::ByteWriter(GenericBufferWriter &&buf)
+	: _buffer(std::move(buf))
+{
+}
+
+BITSCPP_INLINE ByteWriter::ByteWriter(ByteWriter &&o)
+	: _buffer(std::move(o._buffer)), errors(o.errors)
+{
+	o._buffer = {{}};
+	o.errors = 0;
+}
+
+BITSCPP_INLINE ByteWriter &ByteWriter::operator=(ByteWriter &&o)
+{
+	_buffer = std::move(o._buffer);
+	errors = o.errors;
+	o._buffer = {{}};
+	o.errors = 0;
+	return *this;
+}
+
+BITSCPP_INLINE void *ByteWriter::release_buffer_impl()
 {
 	return _buffer.release_buffer();
 }
 
-ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
+BITSCPP_INLINE ByteWriter &
+ByteWriter::op_sized_byte_array_header(uint32_t bytes)
 {
 	if (bytes <= IMMEDIATE_STRING_MAX_SIZE) {
 		_append_byte(BEG_STRING_IMMEDIATE_SIZED + (uint8_t)bytes);
@@ -35,44 +99,43 @@ ByteWriter &ByteWriter::op_sized_byte_array_header(uint32_t bytes)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_sized_string_header(uint32_t bytes)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_sized_string_header(uint32_t bytes)
 {
 	return op_sized_byte_array_header(bytes);
 }
 
-
-ByteWriter &ByteWriter::op(const std::string &str)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const std::string &str)
 {
 	return op(str.c_str(), str.size());
 }
 
-ByteWriter &ByteWriter::op(const std::string_view str)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const std::string_view str)
 {
 	return op_byte_array((const uint8_t *)str.data(), str.size());
 }
 
-ByteWriter &ByteWriter::op(const char *str)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const char *str)
 {
 	return op_byte_array((const uint8_t *)str, strlen(str));
 }
 
-ByteWriter &ByteWriter::op(const char *str, uint32_t size)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const char *str, uint32_t size)
 {
 	return op_byte_array((const uint8_t *)str, size);
 }
 
-ByteWriter &ByteWriter::op(char *str)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(char *str)
 {
 	return op_byte_array((const uint8_t *)str, strlen(str));
 }
 
-ByteWriter &ByteWriter::op(char *str, uint32_t size)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(char *str, uint32_t size)
 {
 	return op_byte_array((const uint8_t *)str, size);
 }
 
-
-ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_byte_array(const uint8_t *data,
+													 uint32_t bytes)
 {
 	_reserve_expand(bytes + 6);
 	op_sized_byte_array_header(bytes);
@@ -80,90 +143,88 @@ ByteWriter &ByteWriter::op_byte_array(const uint8_t *data, uint32_t bytes)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_byte_array(const std::vector<uint8_t> &data)
+BITSCPP_INLINE ByteWriter &
+ByteWriter::op_byte_array(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data.data(), data.size());
 }
 
-ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const std::vector<uint8_t> &data)
 {
 	return op_byte_array(data);
 }
 
-ByteWriter &ByteWriter::op_byte_array(const std::vector<char> &data)
+BITSCPP_INLINE ByteWriter &
+ByteWriter::op_byte_array(const std::vector<char> &data)
 {
-	return op_byte_array((const uint8_t*)data.data(), data.size());
+	return op_byte_array((const uint8_t *)data.data(), data.size());
 }
 
-ByteWriter &ByteWriter::op(const std::vector<char> &data)
+BITSCPP_INLINE ByteWriter &ByteWriter::op(const std::vector<char> &data)
 {
 	return op_byte_array(data);
 }
 
+BITSCPP_INLINE ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
 
-ByteWriter &ByteWriter::op(bool v) { return op_boolean(v); }
-
-ByteWriter &ByteWriter::op_boolean(bool v)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_boolean(bool v)
 {
 	_append_byte(v ? BOOLEAN_TRUE : BOOLEAN_FALSE);
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_false() { return op_boolean(false); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op_false() { return op_boolean(false); }
 
-ByteWriter &ByteWriter::op_true() { return op_boolean(true); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op_true() { return op_boolean(true); }
 
-ByteWriter &ByteWriter::op_begin_object()
+BITSCPP_INLINE ByteWriter &ByteWriter::op_begin_object()
 {
 	_append_byte(BEG_OBJECT);
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_end_object()
+BITSCPP_INLINE ByteWriter &ByteWriter::op_end_object()
 {
 	_append_byte(END_OBJECT);
 	return *this;
 }
 
+BITSCPP_INLINE ByteWriter &ByteWriter::op(uint8_t v) { return op_uint(v); }
 
-ByteWriter &ByteWriter::op(uint8_t v) { return op_uint(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(uint16_t v) { return op_uint(v); }
 
-ByteWriter &ByteWriter::op(uint16_t v) { return op_uint(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(uint32_t v) { return op_uint(v); }
 
-ByteWriter &ByteWriter::op(uint32_t v) { return op_uint(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(uint64_t v) { return op_uint(v); }
 
-ByteWriter &ByteWriter::op(uint64_t v) { return op_uint(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(int8_t v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op(int8_t v) { return op_int(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(int16_t v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op(int16_t v) { return op_int(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op(int32_t v) { return op_int(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op(int64_t v) { return op_int(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(char v) { return op_int(v); }
 
-ByteWriter &ByteWriter::op(char v) { return op_int(v); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
 
-
-ByteWriter &ByteWriter::op_uint(uint64_t v) { return op_int(v); }
-
-ByteWriter &ByteWriter::op_int(int64_t v)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_int(int64_t v)
 {
-	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX) {
-		[[likely]];
+	if (v >= IMMEDIATE_INTEGER_VALUE_MIN && v <= IMMEDIATE_INTEGER_VALUE_MAX)
+		[[likely]] {
 		v -= IMMEDIATE_INTEGER_VALUE_MIN;
 		assert(v >= 0 && v <= IMMEDIATE_INTEGER_MAX);
 		_append_byte((uint8_t)(uint64_t)v);
 		return *this;
 	}
-	
+
 	uint64_t uv = (uint64_t)v;
 	uv = (uv << 1) ^ (v >> 63);
-	assert(uv == (v < 0? (((~v)<<1)|1) : v<<1));
+	assert(uv == (v < 0 ? (((~v) << 1) | 1) : v << 1));
 	static_assert(-1ll == (-10000000ll >> 63));
 	const uint32_t bits = std::bit_width(uv);
-	if (bits <= 12) {
-		[[likely]];
+	if (bits <= 12) [[likely]] {
 		const uint64_t low = uv & 0xF;
 		const uint64_t high = uv >> 4;
 		assert(low < 16);
@@ -180,13 +241,13 @@ ByteWriter &ByteWriter::op_int(int64_t v)
 		assert(*p >= BEG_SIZED_INTEGER && *p <= END_SIZED_INTEGER);
 		WriteBytesInNetworkOrder(p + 1, uv, bytes);
 	}
-	
+
 	return *this;
 }
 
 // floats
 
-ByteWriter &ByteWriter::op_half(float value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_half(float value)
 {
 	uint8_t *p = _expand(3);
 	*p = BEG_HALF;
@@ -194,7 +255,7 @@ ByteWriter &ByteWriter::op_half(float value)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_bfloat(float value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_bfloat(float value)
 {
 	uint8_t *p = _expand(3);
 
@@ -206,8 +267,7 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 	const uint32_t fraction = bv32 & fractionMask;
 
 	p[0] = BEG_BFLOAT;
-	if (exponent == exponentMask) {
-		[[unlikely]];
+	if (exponent == exponentMask) [[unlikely]] {
 		if (fraction == 0) { // infinity
 			p[1] = 0x80;
 		} else { // not a number
@@ -215,19 +275,24 @@ ByteWriter &ByteWriter::op_bfloat(float value)
 		}
 		p[2] = bv32 >> 24;
 		return *this;
-	} else {
-		[[likely]];
+	} else [[likely]] {
 		const uint16_t bfloat = bv32 >> 16;
 		WriteBytesInNetworkOrder(p + 1, bfloat, 2);
 		return *this;
 	}
 }
 
-ByteWriter &ByteWriter::op(float value) { return op_float(value); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(float value)
+{
+	return op_float(value);
+}
 
-ByteWriter &ByteWriter::op(double value) { return op_double(value); }
+BITSCPP_INLINE ByteWriter &ByteWriter::op(double value)
+{
+	return op_double(value);
+}
 
-ByteWriter &ByteWriter::op_float(float value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_float(float value)
 {
 	const uint32_t bv32 = std::bit_cast<uint32_t>(value);
 	uint8_t *p = _expand(5);
@@ -236,7 +301,7 @@ ByteWriter &ByteWriter::op_float(float value)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_double(double value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_double(double value)
 {
 	const uint64_t bv64 = std::bit_cast<uint64_t>(value);
 	uint8_t *p = _expand(9);
@@ -245,8 +310,7 @@ ByteWriter &ByteWriter::op_double(double value)
 	return *this;
 }
 
-
-ByteWriter &ByteWriter::op_map_header(uint32_t elements)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 {
 	if (elements == 0) {
 		_append_byte(BEG_MAP_EMPTY);
@@ -258,12 +322,11 @@ ByteWriter &ByteWriter::op_map_header(uint32_t elements)
 	return *this;
 }
 
-
-ByteWriter &ByteWriter::op_array_header(uint32_t elements)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 {
 	_reserve_expand(10);
-	if (elements <= IMMEDIATE_ARRAY_MAX_SIZE) { // size embeded in header
-		[[likely]];
+	if (elements <= IMMEDIATE_ARRAY_MAX_SIZE)
+		[[likely]] { // size embeded in header
 		_append_byte(BEG_ARRAY_IMMEDIATE_SIZED + elements);
 	} else { // size in following VAR_INT+17
 		_append_byte(BEG_ARRAY_VAR_SIZED);
@@ -272,11 +335,9 @@ ByteWriter &ByteWriter::op_array_header(uint32_t elements)
 	return *this;
 }
 
-
-ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 {
-	if (value <= 0x7F) {
-		[[likely]];
+	if (value <= 0x7F) [[likely]] {
 		uint8_t byte = (uint8_t)value;
 		assert(byte == value);
 		_append_byte(byte);
@@ -312,7 +373,7 @@ ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 	return *this;
 }
 
-ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
 {
 	const uint64_t uvalue = value;
 	const uint64_t sign = uvalue >> 63;
@@ -320,39 +381,39 @@ ByteWriter &ByteWriter::op_untyped_var_int(int64_t value)
 	return op_untyped_var_uint((abs << 1) | sign);
 }
 
-
-ByteWriter &ByteWriter::op_untyped_uint32(uint32_t v)
+BITSCPP_INLINE ByteWriter &ByteWriter::op_untyped_uint32(uint32_t v)
 {
 	uint8_t *ptr = _expand(4);
 	WriteBytesInNetworkOrder(ptr, v, 4);
 	return *this;
 }
 
-
-void ByteWriter::_append_byte(const uint8_t byte) {
+BITSCPP_INLINE void ByteWriter::_append_byte(const uint8_t byte)
+{
 	_buffer.append_byte(byte);
 }
 
-void ByteWriter::_append(const uint8_t *data, uint32_t bytes)
+BITSCPP_INLINE void ByteWriter::_append(const uint8_t *data, uint32_t bytes)
 {
 	_buffer.append(data, bytes);
 }
 
-uint8_t *ByteWriter::_expand(uint8_t bytesToExpand)
+BITSCPP_INLINE uint8_t *ByteWriter::_expand(uint8_t bytesToExpand)
 {
 	return _buffer.expand(bytesToExpand);
 }
 
-void ByteWriter::_reserve_expand(size_t bytesToExpand)
+BITSCPP_INLINE void ByteWriter::_reserve_expand(size_t bytesToExpand)
 {
 	return _buffer.expand_hint(bytesToExpand);
 }
 
-Errors ByteWriter::get_errors() const { return (Errors)errors; }
+BITSCPP_INLINE Errors ByteWriter::get_errors() const { return (Errors)errors; }
 
-void ByteWriter::set_error(Errors error) { errors |= error; }
+BITSCPP_INLINE void ByteWriter::set_error(Errors error) { errors |= error; }
 
-} // namespace v2
+} // namespace v2_2
 } // namespace bitscpp
 
-#undef ByteWriter
+#endif
+#endif
