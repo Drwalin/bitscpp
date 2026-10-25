@@ -6,6 +6,7 @@
 #include "../src/ByteWriter_v2.inl.hpp"
 
 #include <iostream>
+#include <random>
 
 #include <cstdio>
 
@@ -31,18 +32,64 @@ std::ostream& operator<<(std::ostream& s, std::vector<T> v) {
 	return s;
 }
 
+struct Bytes
+{
+	std::vector<uint8_t> bytes;
+	template<typename T>
+	Bytes(const T &v)
+	{
+		bytes.resize(sizeof(T));
+		memcpy(bytes.data(), &v, sizeof(T));
+	}
+};
+
+std::ostream& operator<<(std::ostream& s, Bytes v) {
+	s << "BYTES[";
+	for (uint8_t b : v.bytes) {
+		s << " " << std::hex << (uint32_t)b << std::dec;
+	}
+	s << " ]";
+	return s;
+}
 
 
 
 #pragma pack(push, 1)
-struct Struct {
+struct Parent {
+	int64_t bytes16;
+	int64_t bytes32;
+	int64_t bytes64;
+	
+	uint8_t  a8;
+	int8_t  ua8;
+	uint8_t  b8;
+	int8_t  ub8;
+	
+	uint16_t a16;
+	int16_t ua16;
+	uint16_t b16;
+	int16_t ub16;
+	
+	uint32_t a32;
+	int32_t ua32;
+	uint32_t b32;
+	int32_t ub32;
+	
+	uint64_t a64;
+	int64_t ua64;
+	uint64_t b64;
+	int64_t ub64;
+	
+	double f2;
+	float f1;
+};
+struct Struct : public Parent {
 	Struct() {
 		clear();
 	}
 
 	Struct& operator= (const Struct& other) {
-		const uint64_t offset = ((uint8_t*)&bytes16) - ((uint8_t*)this);
-		memcpy(((uint8_t*)this)+offset, ((uint8_t*)&other)+offset, sizeof(Struct) - offset);
+		*(Parent*)this = *(Parent*)&other;
 		str = other.str;
 		str2 = other.str2;
 		is = other.is;
@@ -50,41 +97,16 @@ struct Struct {
 	}
 
 	bool operator==(const Struct& other) const {
-		const uint64_t offset = ((uint8_t*)&bytes16) - ((uint8_t*)this);
-		return !memcmp(((uint8_t*)this)+offset, ((uint8_t*)&other)+offset, sizeof(Struct) - offset)
-			&& str == other.str && str2 == other.str2 && is == other.is;
+		return
+			!memcmp(this, &other, sizeof(Parent)) 
+			&& str == other.str
+			&& str2 == other.str2
+			&& is == other.is;
 	}
 
 	std::string str;
 	std::string str2;
 	std::vector<int> is;
-
-	int64_t bytes16;
-	int64_t bytes32;
-	int64_t bytes64;
-
-	uint64_t a64;
-	int64_t ua64;
-	uint64_t b64;
-	int64_t ub64;
-
-	double f2;
-	float f1;
-
-	uint32_t a32;
-	int32_t ua32;
-	uint32_t b32;
-	int32_t ub32;
-
-	uint16_t a16;
-	int16_t ua16;
-	uint16_t b16;
-	int16_t ub16;
-
-	uint8_t  a8;
-	int8_t  ua8;
-	uint8_t  b8;
-	int8_t  ub8;
 
 	void cmp(Struct& s) {
 		std::cout << "\n\n";
@@ -128,7 +150,7 @@ struct Struct {
 		return s;
 	}
 
-	BITSCPP_DEFINE_INLINE_SERIALIZE_METHOD(s, {
+	void serialize(auto& s) {
 		using S = std::remove_cvref_t<decltype(s)>;
 		if constexpr (S::VERSION == 1) {
 			s.op(bytes16, 1);
@@ -181,14 +203,13 @@ struct Struct {
 
 		s.op(f2);
 		s.op(f1);
-	});
-#undef ByteWriter
+	}
 
 	void clear() {
 		str.~basic_string();
 		str2.~basic_string();
 		is.~vector();
-		memset((void*)this, 0, sizeof(*this));
+		memset((Parent*)this, 0, sizeof(Parent));
 		new (&str) std::string;
 		new (&str2) std::string;
 		new (&is) std::vector<int>;
@@ -302,20 +323,33 @@ void Random(Struct& s) {
 }
 
 
-#define COMPARE(T, orig, value, X) { \
+#define COMPARE(binary, T, orig, value, X) { \
 		T v = orig; \
 		bitscpp::VectorWrapper ____buffer; \
-		{ ByteWriter s(&____buffer); \
-		X;\
+		{ \
+			ByteWriter s(&____buffer); \
+			X; \
 		} \
 		v = T(); \
-		{ ByteReader s(____buffer.data(), ____buffer.size()); \
-		X; \
-		if (s.is_valid()) { correct++; } else { std::cout << " READING BUFFER ERROR\n"; incorrect++; } \
+		{ \
+			ByteReader s(____buffer.data(), ____buffer.size()); \
+			X; \
+			if (s.is_valid()) { \
+				correct++; \
+			} else { \
+				std::cout << " READING BUFFER ERROR\n"; incorrect++; \
+			} \
 		} \
-		if(v == value) { std::cout << " TRUE      "; correct++; \
-		} else { std::cout << " FALSE      "; incorrect++; } \
-		std::cout << value << "  ==  " << v << "\n"; \
+		if(v == value) { \
+			std::cout << " TRUE      "; correct++; \
+		} else { \
+			std::cout << " FALSE      "; incorrect++; \
+		} \
+		std::cout << value << "  ==  " << v; \
+		if constexpr (binary) { \
+			std::cout << " . . . " << Bytes(value) << " == " << Bytes(v); \
+		} \
+		std::cout << "\n"; \
 }
 
 template<typename Tdst, typename Tsrc>
@@ -365,19 +399,19 @@ int main() {
 	std::cout << "\n\n\n\n";
 	
 	if constexpr (ByteReader::VERSION == 1) {
-		COMPARE(float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
-		COMPARE(float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
-		COMPARE(float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
+		COMPARE(true, float, 73, RC<float>((uint32_t)(0x4291E1E2)), s.op(v,0,200.f,1));
+		COMPARE(true, float, 500, RC<float>((uint32_t)(0x43F9FFEC)), s.op(v,480.f,-20,60.0,2));
+		COMPARE(true, float, 123.23456, RC<float>((uint32_t)(0x42F67818)), s.op(v));
 
-		COMPARE(float, -1, -1, s.op(v,-1,1,1));
-		COMPARE(float, 1, 1, s.op(v,-1,1,1));
+		COMPARE(true, float, -1, -1, s.op(v,-1,1,1));
+		COMPARE(true, float, 1, 1, s.op(v,-1,1,1));
 	} else {
-		COMPARE(float, 73.0f, 73.0f, s.op(v));
-		COMPARE(float, 500.0f, 500.0f, s.op(v));
-		COMPARE(float, 123.23456f, 123.23456f, s.op(v));
+		COMPARE(true, float, 73.0f, 73.0f, s.op(v));
+		COMPARE(true, float, 500.0f, 500.0f, s.op(v));
+		COMPARE(true, float, 123.23456f, 123.23456f, s.op(v));
 
-		COMPARE(float, -1, -1, s.op_half(v));
-		COMPARE(float, 1, 1, s.op_half(v));
+		COMPARE(true, float, -1, -1, s.op_half(v));
+		COMPARE(true, float, 1, 1, s.op_half(v));
 	}
 // 	COMPARE(float, 0, 0, s.op(v,-1,1,1));
 // 	COMPARE(float, -0.5, -0.5, s.op(v,-1,1,1));
@@ -385,42 +419,42 @@ int main() {
 // 	COMPARE(float, -0.25, -0.25, s.op(v,-1,1,1));
 // 	COMPARE(float, 0.25, 0.25, s.op(v,-1,1,1));
 	
-	COMPARE(std::string, "123456", "123456", s.op(v));
+	COMPARE(false, std::string, "123456", "123456", s.op(v));
 	{
 		std::vector<std::string> vs = {"asdf","323","mleko"};
-		COMPARE(decltype(vs), vs, vs, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs, s.op(v));
 	}
 	
 	{
 		std::vector<uint8_t> vs = {41,31,211,21,33,123,53,223,135,235,25,243,77};
-		COMPARE(decltype(vs), vs, vs, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs, s.op(v));
 	}
 	
 	{
 		std::vector<int> vs = {4,3,2,1,24,532,53,2423,435,2345,4325,243,54235};
-		COMPARE(decltype(vs), vs, vs, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs, s.op(v));
 	}
 	
 	{
 		std::vector<int> vs = {13,123,12345};
-		COMPARE(decltype(vs), vs, vs, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs, s.op(v));
 	}
 	
 	{
 		std::vector<std::set<int>> vs = {{13,123},{12345}};
-		COMPARE(decltype(vs), vs, vs, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs, s.op(v));
 	}
 	
 	{
 		std::vector<int> vs = {13,123,12345};
 		std::vector<int> vs2 = {13,123,12345};
-		COMPARE(decltype(vs), vs, vs2, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs2, s.op(v));
 	}
 	
 	{
 		std::vector<std::set<int>> vs = {{13,123},{12345}};
 		std::vector<std::set<int>> vs2 = {{13,123},{12345}};
-		COMPARE(decltype(vs), vs, vs2, s.op(v));
+		COMPARE(false, decltype(vs), vs, vs2, s.op(v));
 	}
 	
 	printf("\n\n correct %i / %i\n", correct, correct + incorrect);
@@ -459,17 +493,96 @@ void TestNetworkOrder() {
 	t(0x8070605040302010);
 }
 
+template<typename ByteReader, typename ByteWriter>
+void TestVarInt() {
+	int correct = 0, incorrect = 0;
+	std::cout << "Test var_int\n";
+	std::random_device rd;
+	std::mt19937_64 mt(rd());
+	std::vector<int64_t> values;
+	
+	for (int64_t bits=0; bits!=64; ++bits) {
+		for (int64_t i = -2; i != 3; ++i) {
+			int64_t v = (1llu << bits) + i;
+			values.push_back(v);
+			values.push_back(-v);
+		}
+	}
+
+	for (int64_t bits=0; bits!=64; ++bits) {
+		for (int64_t i = -2; i != 3; ++i) {
+			int64_t v = mt() | (1llu << 63);
+			v = (v >> (64-bits)) + i;
+			values.push_back(v);
+		}
+	}
+
+	for (auto v : values) {
+		for (int i=0; i<2; ++i) {
+			uint64_t v2 = mt();
+
+			bitscpp::VectorWrapper ____buffer;
+			{
+				ByteWriter s(&____buffer);
+				if (i) {
+					s.op(v);
+				} else {
+					s.op_untyped_var_uint(v);
+				}
+			}
+
+			{
+				ByteReader s(____buffer.data(), ____buffer.size());
+				if (i) {
+					s.op(v2);
+				} else {
+					s.op_untyped_var_uint(v2);
+				}
+
+				if (s.is_valid()) {
+					correct++;
+				} else {
+					std::cout << " READING BUFFER ERROR ";
+					totalErrors++;
+					incorrect++;
+				}
+
+				if(v == v2 && s.is_valid()) {
+// 					std::cout << " TRUE       ";
+// 					std::cout << v << "  ==  " << v2 << "\n";
+					correct++;
+				} else {
+					std::cout << " FALSE (" << (i?"V1":"V2") << ")   ";
+					std::cout << v << "  ==  " << v2 << "\n";
+					totalErrors++;
+					incorrect++;
+				}
+			}
+		}
+	}
+	printf("\n\n correct %i / %i\n\n", correct, correct + incorrect);
+}
+
 int main() {
 	printf("bitscpp::network order:\n");
 	TestNetworkOrder();
 	
-	printf("\n\n");
-	printf("bitscpp::v2:\n");
-	Test<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	{
+		printf("\n\n");
+		printf("bitscpp::v1:\n");
+		Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	}
 	
-	printf("\n\n");
-	printf("bitscpp::v1:\n");
-	Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	{
+		printf("\n\n");
+		printf("bitscpp::v2:\n");
+		TestVarInt<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>();
+		printf("\n\n");
+		printf("bitscpp::v2:\n");
+		Test<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	}
+	
+	printf("Total errors: %lu\n", totalErrors);
 	
 	return totalErrors ? 1 : 0;
 }

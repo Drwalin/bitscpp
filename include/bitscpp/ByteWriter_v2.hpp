@@ -52,7 +52,7 @@ public:
 			item.serialize(*this);
 		} else if constexpr (requires { ((T &)item).serialize(*this); }) {
 			// TODO: remove this branch
-			static_assert(!"Consider removing this branch");
+			static_assert("Consider removing this branch");
 			((T &)item).serialize(*this);
 		} else if constexpr (requires {
 				bitscpp::serializer<ByteWriter<BT>, T>::op(*this, item);
@@ -67,7 +67,7 @@ public:
 			serialize(*this, item);
 		} else if constexpr (requires { serialize(*this, *(T *)&item); }) {
 			// TODO: remove this branch
-			static_assert(!"Consider removing this branch");
+			static_assert("Consider removing this branch");
 			serialize(*this, *(T *)&item);
 		} else {
 			static_assert(

@@ -42,18 +42,12 @@ struct GenericBufferWriter;
 
 struct GenericBufferWriterImpl {
 	// Construct underlying buffer if it is not present.
-	// Guarantees to return at least 1 byte available in head..end range.
-	// Best effort to reserve around hint_needed_bytes bytes.
-	// set head and end
-	void (*expand_hint)(GenericBufferWriter *buffer, size_t hint_needed_bytes) = nullptr;
-
-	// Construct underlying buffer if it is not present.
-	// Guarantees range head..end points to range of at least needed_bytes bytes
-	// available.
+	// Guarantees range head..end points to range of at least minimum bytes
+	// available, up to a hint.
 	// Sets head and end pointers.
 	// Due to performance reasons and possible implementation optimizations,
 	// maximum of smallest guaranteed available range is 255 
-	void (*expand)(GenericBufferWriter *buffer, uint8_t needed_bytes) = nullptr;
+	void (*expand)(GenericBufferWriter *buffer, uint8_t minimum, size_t hint) = nullptr;
 
 	// destructs and deallocates underlying buffer - caller needs to take care
 	// of wether object is allocated on stack or heap.
@@ -62,17 +56,19 @@ struct GenericBufferWriterImpl {
 	// Releases underlying buffer from GenericBufferWriter. After call
 	// underlying buffer needs to be returned, and:
 	// buffer, head and end need to be set to nullptr by GenericBufferWriter.
-	void (*release_underlying_buffer)(GenericBufferWriter *buffer) = nullptr;
+	void (*apply_head_end_to_underlying)(GenericBufferWriter *buffer) = nullptr;
 };
 
 struct GenericBufferWriter {
+	static GenericBufferWriterImpl DEFAULT_STD_VECTOR;
+
 	/*
 	 * Takes ownership of buffer. If buffer is allocated on the stack, then
 	 * caller needs to guarantee that impl.destructor does not deallocates
 	 * *buffer.
 	 */
 	GenericBufferWriter(void *buffer, GenericBufferWriterImpl impl);
-	
+
 	GenericBufferWriter(GenericBufferWriterImpl impl);
 	GenericBufferWriter(const GenericBufferWriter&) = delete;
 	GenericBufferWriter(GenericBufferWriter&) = delete;
@@ -83,7 +79,8 @@ struct GenericBufferWriter {
 	// calls impl.destructor
 	~GenericBufferWriter();
 
-	// assimilates head+end into underlying buffer
+	// assimilates head+end into underlying buffer, then clears buffer, head,
+	// end
 	void *release_buffer();
 
 	void append_byte(const uint8_t byte) noexcept;

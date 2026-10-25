@@ -7,6 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BITSCPP_BUILD_TEST "Build bitscpp tests" ON)
+option(BITSCPP_ENABLE_LTO "Bitscpp enable LTO" ON)
+
+if(BITSCPP_ENABLE_LTO)
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
 
 include_directories(./include/)
 

@@ -4,11 +4,51 @@
 // You should have received a copy of the MIT License along with this program.
 
 #include <cassert>
+#include <cstring>
+
+#include <vector>
 
 #include "../include/bitscpp/GenericBufferWrapper.hpp"
 
 namespace bitscpp
 {
+GenericBufferWriterImpl GenericBufferWriter::DEFAULT_STD_VECTOR {
+	+[](GenericBufferWriter *buffer, uint8_t minimum, size_t hint)
+	{
+		std::vector<uint8_t> *&b = *(std::vector<uint8_t>**)&(buffer->buffer);
+		if (b == nullptr) {
+			b = new std::vector<uint8_t>;
+		}
+		size_t oldSize = b->size();
+		
+		size_t newSize = b->size() + std::max<size_t>(minimum, hint);
+		if (newSize > b->capacity()) {
+			size_t newCap = std::max<size_t>(newSize + 64, b->capacity() * 3 / 2 + 64);
+			b->reserve(newCap);
+		}
+		b->resize(newSize);
+		buffer->head = b->data() + oldSize;
+		buffer->end = b->data() + newSize;
+	},
+	+[](GenericBufferWriter *buffer)
+	{
+		std::vector<uint8_t> *b = (std::vector<uint8_t>*)(buffer->buffer);
+		delete b;
+		buffer->buffer = nullptr;
+		buffer->head = nullptr;
+		buffer->end = nullptr;
+	},
+	+[](GenericBufferWriter *buffer)
+	{
+		std::vector<uint8_t> *&b = *(std::vector<uint8_t>**)&(buffer->buffer);
+		if (b == nullptr) {
+			return;
+		}
+		b->resize(b->size() - (buffer->end - buffer->head));
+		buffer->end = buffer->head;
+	}
+};
+
 GenericBufferWriter::GenericBufferWriter(GenericBufferWriterImpl impl)
 	: impl(impl)
 {
@@ -70,7 +110,7 @@ void *GenericBufferWriter::release_buffer()
 	}
 	assert(impl.release_underlying_buffer);
 	void *const buf = buffer;
-	impl.release_underlying_buffer(this);
+	impl.apply_head_end_to_underlying(this);
 	buffer = nullptr;
 	head = nullptr;
 	end = nullptr;
@@ -115,18 +155,21 @@ void GenericBufferWriter::append_slow(uint8_t const *data,
 		data += available;
 		const size_t left = (_end - data);
 
-		impl.expand_hint(this, left);
+		impl.expand(this, 1, left);
 	}
 }
 
 uint8_t *GenericBufferWriter::expand(uint8_t bytes) noexcept
 {
-	if ((head + bytes) > end) {
-		[[unlikely]];
-		impl.expand(this, bytes);
-	}
 	uint8_t *ret = head;
 	head += bytes;
+	if (head > end) {
+		[[unlikely]];
+		head -= bytes;
+		impl.expand(this, bytes, bytes);
+		ret = head;
+		head += bytes;
+	}
 	return ret;
 }
 
@@ -134,7 +177,7 @@ void GenericBufferWriter::expand_hint(size_t hint_bytes_to_expand) noexcept
 {
 	if ((head + hint_bytes_to_expand) > end) {
 		[[unlikely]];
-		impl.expand_hint(this, hint_bytes_to_expand);
+		impl.expand(this, 1, hint_bytes_to_expand);
 	}
 }
 } // namespace bitscpp
