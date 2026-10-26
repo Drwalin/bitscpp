@@ -8,11 +8,9 @@
 #ifndef BITSCPP_BYTE_WRITER_V2_2_CPP
 #define BITSCPP_BYTE_WRITER_V2_2_CPP
 
-#if not defined BITSCPP_INLINE
-#warning MAIN SOURCE FILE
+#if not defined _BITSCPP_INLINE
 #define BITSCPP_NO_INLINE_CPP_BYTE_WRITER_V2_2
-#else
-#warning INCLUDED SOURCE FILE
+#endif
 
 #include <cassert>
 #include <cstring>
@@ -24,25 +22,14 @@
 
 #include "../include/bitscpp/ByteWriter_v2_2.hpp"
 
-#if defined BITSCPP_NO_INLINE_CPP_BYTE_WRITER_V2_2
 # undef BITSCPP_INLINE
+#if defined BITSCPP_NO_INLINE_CPP_BYTE_WRITER_V2_2
 # define BITSCPP_INLINE
-# warning NO INLINE
 #else
-# if defined BITSCPP_INLINE_BOOL
-#  warning INLINE
-# else
-#  warning NO INLINE
-# endif
+# define BITSCPP_INLINE _BITSCPP_INLINE
 #endif
 
-#ifdef BITSCPP_INLINE
-#warning DEFINED INLINE
-#else
-#warning NOT DEFINED INLINE
-#endif
-
-BITSCPP_INLINE inline void asdf() {}
+// BITSCPP_INLINE inline void asdf() {}
 
 namespace bitscpp
 {
@@ -415,5 +402,4 @@ BITSCPP_INLINE void ByteWriter::set_error(Errors error) { errors |= error; }
 } // namespace v2_2
 } // namespace bitscpp
 
-#endif
 #endif

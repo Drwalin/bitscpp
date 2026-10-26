@@ -16,7 +16,7 @@ namespace bitscpp
 {
 /*
  * Example usage 1:
- * 
+ *
  * UnderlyingBuffer under_buf{...};
  * static GenericBufferWriterPimpl impl{...};
  * GenericBufferWriter buffer(&under_buf, impl);
@@ -24,19 +24,19 @@ namespace bitscpp
  * // do writes here
  * buffer = writer.release_buffer();
  * ((ignore_ret_value)) buffer.release_buffer();
- * 
+ *
  * now under_buf is filled and ready to use
- * 
- * 
+ *
+ *
  * Example usage 2:
- * 
+ *
  * static GenericBufferWriterPimpl impl{...};
  * GenericBufferWriter buffer(impl);
  * v2_2::ByteWriter writer(std::move(buffer));
  * // do writes here
  * buffer = writer.release_buffer();
  * UnderlyingBuffer *under_buf = buffer.release_buffer();
- * 
+ *
  * now *under_buf is filled and ready to use
  */
 struct GenericBufferWriter {
@@ -45,35 +45,36 @@ struct GenericBufferWriter {
 	 * caller needs to guarantee that impl.destructor does not deallocates
 	 * *buffer.
 	 */
-	GenericBufferWriter(void *buffer, GenericBufferWriterPimpl impl);
+	_BITSCPP_INLINE GenericBufferWriter(void *buffer,
+										GenericBufferWriterPimpl impl);
 
-	GenericBufferWriter(GenericBufferWriterPimpl impl);
-	GenericBufferWriter(const GenericBufferWriter&) = delete;
-	GenericBufferWriter(GenericBufferWriter&) = delete;
-	GenericBufferWriter(GenericBufferWriter&&);
-	GenericBufferWriter &operator=(const GenericBufferWriter&) = delete;
-	GenericBufferWriter &operator=(GenericBufferWriter&) = delete;
-	GenericBufferWriter &operator=(GenericBufferWriter&&);
+	_BITSCPP_INLINE GenericBufferWriter(GenericBufferWriterPimpl impl);
+	GenericBufferWriter(const GenericBufferWriter &) = delete;
+	GenericBufferWriter(GenericBufferWriter &) = delete;
+	_BITSCPP_INLINE GenericBufferWriter(GenericBufferWriter &&);
+	GenericBufferWriter &operator=(const GenericBufferWriter &) = delete;
+	GenericBufferWriter &operator=(GenericBufferWriter &) = delete;
+	GenericBufferWriter &operator=(GenericBufferWriter &&);
 	// calls impl.destructor
-	~GenericBufferWriter();
+	_BITSCPP_INLINE ~GenericBufferWriter();
 
 	// assimilates head+end into underlying buffer, then clears buffer, head,
 	// end
-	void *release_buffer();
+	_BITSCPP_INLINE void *release_buffer();
 
-	void append_byte(const uint8_t byte) noexcept;
-	void append(const uint8_t *data, size_t bytes) noexcept;
+	_BITSCPP_INLINE void append_byte(const uint8_t byte) noexcept;
+	_BITSCPP_INLINE void append(const uint8_t *data, size_t bytes) noexcept;
 
 	/*
 	 * Returns pointer to empty needed_bytes. Returned range is considered
 	 * already written to buffer - allows for zero-copy appending
 	 */
-	uint8_t *expand(uint8_t needed_bytes) noexcept;
+	_BITSCPP_INLINE uint8_t *expand(uint8_t needed_bytes) noexcept;
 
 	/*
 	 * Calles impl.expand_hint
 	 */
-	void expand_hint(size_t hint_needed_bytes) noexcept;
+	_BITSCPP_INLINE void expand_hint(size_t hint_needed_bytes) noexcept;
 
 private:
 	void append_slow(const uint8_t *data, size_t bytes) noexcept;

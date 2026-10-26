@@ -8,7 +8,7 @@
 #ifndef BITSCPP_BYTE_READER_V2_CPP
 #define BITSCPP_BYTE_READER_V2_CPP
 
-#if not defined BITSCPP_INLINE
+#if not defined _BITSCPP_INLINE
 #define BITSCPP_NO_INLINE_CPP_BYTE_READER_V2
 #endif
 
@@ -25,15 +25,82 @@
 
 #include "../include/bitscpp/ByteReader_v2.hpp"
 
-#if defined BITSCPP_NO_INLINE_CPP_BYTE_READER_V2
 #undef BITSCPP_INLINE
+#if defined BITSCPP_NO_INLINE_CPP_BYTE_READER_V2
 #define BITSCPP_INLINE
+#else
+#define BITSCPP_INLINE _BITSCPP_INLINE
 #endif
 
 namespace bitscpp
 {
 namespace v2
 {
+BITSCPP_INLINE ByteReader::ByteReader(const uint8_t *buffer, uint32_t offset,
+									  uint32_t size)
+	: _buffer(buffer), ptr(buffer ? buffer + offset : nullptr),
+	  end(buffer ? buffer + size : nullptr), total_size(buffer ? size : 0),
+	  errors(0)
+{
+	if (buffer == nullptr) {
+		ptr = nullptr;
+		end = nullptr;
+		set_error(ERROR_BUFFER_NULLPTR);
+	}
+}
+
+BITSCPP_INLINE ByteReader::ByteReader(const uint8_t *buffer, uint32_t size)
+	: ByteReader(buffer, 0, size)
+{
+}
+
+BITSCPP_INLINE ByteReader::ByteReader(const ByteReader &o)
+{
+	_buffer = o._buffer;
+	ptr = o.ptr;
+	end = o.end;
+	total_size = o.total_size;
+	errors = o.errors;
+}
+
+BITSCPP_INLINE ByteReader::ByteReader(ByteReader &o)
+{
+	_buffer = o._buffer;
+	ptr = o.ptr;
+	end = o.end;
+	total_size = o.total_size;
+	errors = o.errors;
+}
+
+BITSCPP_INLINE ByteReader::ByteReader(ByteReader &&o)
+{
+	_buffer = o._buffer;
+	ptr = o.ptr;
+	end = o.end;
+	total_size = o.total_size;
+	errors = o.errors;
+	o._buffer = nullptr;
+	o.ptr = nullptr;
+	o.end = nullptr;
+	o.total_size = 0;
+	o.errors = 0;
+}
+
+BITSCPP_INLINE ByteReader &ByteReader::operator=(const ByteReader &o)
+{
+	return *new (this) ByteReader(o);
+}
+
+BITSCPP_INLINE ByteReader &ByteReader::operator=(ByteReader &o)
+{
+	return *new (this) ByteReader(o);
+}
+
+BITSCPP_INLINE ByteReader &ByteReader::operator=(ByteReader &&o)
+{
+	return *new (this) ByteReader(std::move(o));
+}
+
 BITSCPP_INLINE Type ByteReader::get_next_type() const
 {
 	return (Type)((uint8_t)get_next_detailed_type() & 0x1F);

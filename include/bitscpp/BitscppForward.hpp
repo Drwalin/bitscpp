@@ -18,13 +18,11 @@ class ByteReader;
 class GenericBufferWriter;
 }
 
-#if not defined BITSCPP_INLINE
+#if not defined _BITSCPP_INLINE
 # if BITSCPP_ENABLE_INLINE_V2
-#  define BITSCPP_INLINE inline
-#  warning INLINE ---------
+#  define _BITSCPP_INLINE inline
 # else
-#  define BITSCPP_INLINE
-#  warning NO INLINE ---------
+#  define _BITSCPP_INLINE
 # endif
 #endif
 

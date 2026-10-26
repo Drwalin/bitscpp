@@ -8,7 +8,7 @@
 #ifndef BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
 #define BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
 
-#if not defined BITSCPP_INLINE
+#if not defined _BITSCPP_INLINE
 #define BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
 #endif
 
@@ -17,9 +17,11 @@
 
 #include "../include/bitscpp/GenericBufferWrapper.hpp"
 
-#if defined BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
 #undef BITSCPP_INLINE
+#if defined BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
 #define BITSCPP_INLINE
+#else
+#define BITSCPP_INLINE _BITSCPP_INLINE
 #endif
 
 namespace bitscpp
@@ -49,8 +51,8 @@ BITSCPP_INLINE GenericBufferWriter::GenericBufferWriter(GenericBufferWriter &&o)
 	o.end = nullptr;
 }
 
-BITSCPP_INLINE GenericBufferWriter &
-GenericBufferWriter::operator=(GenericBufferWriter &&o)
+#if defined BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
+GenericBufferWriter &GenericBufferWriter::operator=(GenericBufferWriter &&o)
 {
 	if (buffer) {
 		assert(impl.destructor);
@@ -69,6 +71,7 @@ GenericBufferWriter::operator=(GenericBufferWriter &&o)
 	o.end = nullptr;
 	return *this;
 }
+#endif
 
 BITSCPP_INLINE GenericBufferWriter::~GenericBufferWriter()
 {
@@ -118,8 +121,9 @@ BITSCPP_INLINE void GenericBufferWriter::append(uint8_t const *data,
 	append_slow(data, bytes);
 }
 
-BITSCPP_INLINE void GenericBufferWriter::append_slow(uint8_t const *data,
-													 size_t bytes) noexcept
+#if defined BITSCPP_NO_INLINE_CPP_GENERIC_BUFFER_WRAPPER
+void GenericBufferWriter::append_slow(uint8_t const *data,
+									  size_t bytes) noexcept
 {
 	const uint8_t *_end = data + bytes;
 	while (const size_t to_write = (_end - data)) {
@@ -137,6 +141,7 @@ BITSCPP_INLINE void GenericBufferWriter::append_slow(uint8_t const *data,
 		impl.expand(this, 1, left);
 	}
 }
+#endif
 
 BITSCPP_INLINE uint8_t *GenericBufferWriter::expand(uint8_t bytes) noexcept
 {
