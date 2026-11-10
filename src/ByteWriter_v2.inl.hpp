@@ -277,17 +277,17 @@ ByteWriter<BT> &ByteWriter<BT>::op_untyped_var_uint(uint64_t value)
 	} else {
 		const uint32_t bits = std::bit_width(value);
 		constexpr uint8_t _bytes[65] = {
-			1,1,1,1,1,1,1,
+			1,1,1,1,1,1,1,1,
 			2,2,2,2,2,2,2,
 			3,3,3,3,3,3,3,
 			4,4,4,4,4,4,4,
 			5,5,5,5,5,5,5,
 			6,6,6,6,6,6,6,
 			7,7,7,7,7,7,7,
-			8,8,8,8,8,8,8,8,
+			8,8,8,8,8,8,8,
 			9,9,9,9,9,9,9,9};
 		const uint32_t bytes = _bytes[bits];
-		assert(bytes == (bits + 6) / 7);
+		assert(bytes == (bits + 6) / 7 || (bytes == 1 && bits == 0) || (bytes == 9 && bits == 64));
 
 		constexpr uint8_t masks[9] = {0x7F, 0x3F, 0x1F, 0x0F,
 									 0x07, 0x03, 0x01, 0x00, 0x00};

@@ -89,7 +89,6 @@ BITSCPP_INLINE void *GenericBufferWriter::release_buffer()
 	if (buffer == nullptr) {
 		return nullptr;
 	}
-	assert(impl.release_underlying_buffer);
 	void *const buf = buffer;
 	impl.apply_head_end_to_underlying(this);
 	buffer = nullptr;
