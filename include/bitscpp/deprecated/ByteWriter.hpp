@@ -13,9 +13,10 @@
 #include <string_view>
 #include <vector>
 
-#include "Endianness.hpp"
+#include "../Endianness.hpp"
 
 namespace bitscpp {
+namespace deprecated {
 
 	template<typename BT>
 	class ByteWriter;
@@ -402,6 +403,7 @@ namespace bitscpp {
 			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
+}
 } // namespace bitscpp
 
 #endif

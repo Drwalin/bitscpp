@@ -6,20 +6,27 @@ This project is under MIT License. Please see LICENSE file.
 Requires C++23 to compile.
 
 Library provides serialization and deserialization to binary buffers/arrays.
-Able to use with `std::vector<uint8_t>` or other classes/structures
-with following interface as a serialization buffer:
+Requires implementation of custom buffer writer:
 
 ```C++
-class Buffer {
-    uint8_t *data();
-    size_t size();
-    void resize(size_t newSize);
-    size_t capacity();
-    void reserve(size_t newCapacity);
+bitscpp::GenericBufferWriterPimpl bufferWriterImpl = {
+    .expand = +[](GenericBufferWriter *buffer, uint8_t minimum, std::size_t hint)
+    {
+        ...
+    },
+	destructor = +[](GenericBufferWriter *buffer)
+    {
+        ...
+    },
+	apply_head_end_to_underlying = +[](GenericBufferWriter *buffer)
+    {
+        ...
+    }
 };
 ```
 
-Deserialization is made from plain C byte array.
+Deserialization with ByteReader requires only a raw pointer to C byte array
+and it's size.
 
 
 ## Benchmark rsults

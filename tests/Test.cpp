@@ -1,8 +1,10 @@
 
-#include "../include/bitscpp/VectorWrapper.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/deprecated/VectorWrapper.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/Endianness.hpp"
 #include "../include/bitscpp/ByteWriterExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/deprecated/ByteWriterExtensions.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/deprecated/ByteReaderExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/ByteWriter_v2.hpp"
 #include "../include/bitscpp/ByteReader_v2.hpp"
 #include "../include/bitscpp/ByteWriter_v2_2.hpp"
@@ -573,7 +575,7 @@ int main() {
 	{
 		printf("\n\n");
 		printf("bitscpp::v1:\n");
-		Test<bitscpp::ByteReader<true>, bitscpp::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+		Test<bitscpp::deprecated::ByteReader<true>, bitscpp::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	}
 	
 	{

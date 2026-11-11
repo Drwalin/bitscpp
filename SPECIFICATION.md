@@ -3,7 +3,7 @@
 
 ## format V1: untyped
 
-[[ CURRENTLY IMPLEMENTED ]]
+[[ CURRENTLY IMPLEMENTED, DEPRECATED ]]
 
 User is fully responsible for checking if stored data has correct type.
 

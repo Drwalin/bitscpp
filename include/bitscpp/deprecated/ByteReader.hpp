@@ -13,9 +13,10 @@
 #include <string_view>
 #include <vector>
 
-#include "Endianness.hpp"
+#include "../Endianness.hpp"
 
 namespace bitscpp {
+namespace deprecated {
 	
 	template<bool __safeReading = true>
 	class ByteReader;
@@ -452,6 +453,7 @@ namespace bitscpp {
 		value += origin;
 		return *this;
 	}
+}
 } // namespace bitscpp
 
 #endif
