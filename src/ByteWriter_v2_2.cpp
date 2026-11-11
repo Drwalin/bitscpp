@@ -47,7 +47,6 @@ BITSCPP_INLINE void ByteWriter::Init(GenericBufferWriter &&buf)
 BITSCPP_INLINE ByteWriter::ByteWriter(GenericBufferWriterPimpl impl)
 	: _buffer(impl)
 {
-	Init({impl});
 }
 
 BITSCPP_INLINE ByteWriter::ByteWriter(GenericBufferWriter &&buf)

@@ -181,7 +181,7 @@ private:
 	_BITSCPP_INLINE uint8_t *_expand(uint8_t bytesToExpand);
 	_BITSCPP_INLINE void _reserve_expand(size_t bytesToExpand);
 
-private:
+protected:
 	GenericBufferWriter _buffer;
 	uint32_t errors = 0;
 };
