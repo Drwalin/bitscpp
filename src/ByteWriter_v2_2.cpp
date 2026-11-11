@@ -401,6 +401,11 @@ BITSCPP_INLINE Errors ByteWriter::get_errors() const { return (Errors)errors; }
 
 BITSCPP_INLINE void ByteWriter::set_error(Errors error) { errors |= error; }
 
+BITSCPP_INLINE void *ByteWriter::release_buffer()
+{
+	return _buffer.release_buffer();
+}
+
 } // namespace v2_2
 } // namespace bitscpp
 

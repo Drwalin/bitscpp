@@ -146,6 +146,7 @@ public:
 
 	_BITSCPP_INLINE void set_error(Errors error);
 	_BITSCPP_INLINE Errors get_errors() const;
+	_BITSCPP_INLINE void *release_buffer();
 
 public:
 	template <typename T>
