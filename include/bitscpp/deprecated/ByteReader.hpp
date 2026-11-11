@@ -149,7 +149,7 @@ namespace deprecated {
 		
 		template<typename T>
 		inline ByteReader& op(std::vector<T>& arr) {
-			uint32_t elems;
+			uint32_t elems = 0;
 			op(elems);
 			arr.resize(elems);
 			return op<T>(arr.data(), elems);

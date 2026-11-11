@@ -14,13 +14,13 @@ namespace v2_2
 {
 class ByteWriter;
 }
-using namespace v2_2;
+using bitscpp::v2_2::ByteWriter;
 
 namespace v2
 {
 class ByteReader;
 }
-using namespace v2;
+using bitscpp::v2::ByteReader;
 
 class GenericBufferWriter;
 }

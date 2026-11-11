@@ -5,6 +5,7 @@
 #include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/deprecated/ByteWriterExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/deprecated/ByteReaderExtensions.hpp" // IWYU pragma: keep
+#include "../include/bitscpp/deprecated/ByteWriterExtensions_v2.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/deprecated/ByteWriter_v2.hpp"
 #include "../include/bitscpp/ByteReader_v2.hpp"
 #include "../include/bitscpp/ByteWriter_v2_2.hpp"
@@ -224,6 +225,97 @@ struct Struct : public Parent {
 
 
 
+static bitscpp::GenericBufferWriterPimpl buffer_writer_pimpl =
+{
+    .expand = +[](bitscpp::GenericBufferWriter *buffer, uint8_t minimum, std::size_t hint)
+    {
+		bitscpp::VectorWrapper *buf = (bitscpp::VectorWrapper *)(buffer->buffer);
+		if (buf == nullptr) {
+			fprintf(stderr, "Error: no buffer storage\n");
+			fflush(stderr);
+			exit(1);
+		}
+		ptrdiff_t offset = 0;
+		if (buffer->head) {
+			offset = buffer->head - buf->data();
+		}
+		size_t new_size = minimum + hint + buf->size() + 16;
+		new_size = (new_size * 3) / 2;
+		buf->resize(new_size);
+		buffer->head = buf->data() + offset;
+		buffer->end = buf->data() + buf->size();
+    },
+	.destructor = +[](bitscpp::GenericBufferWriter *buffer)
+    {
+    },
+	.apply_head_end_to_underlying = +[](bitscpp::GenericBufferWriter *buffer)
+    {
+		bitscpp::VectorWrapper *buf = (bitscpp::VectorWrapper *)(buffer->buffer);
+		if (buf == nullptr) {
+			fprintf(stderr, "Error: no buffer storage\n");
+			fflush(stderr);
+			exit(1);
+		}
+		ptrdiff_t offset = 0;
+		if (buffer->head) {
+			offset = buffer->head - buf->data();
+		}
+		buf->resize(offset);
+		buffer->head = buf->data() + offset;
+		buffer->end = buf->data() + buf->size();
+    }
+};
+
+template<typename TW>
+struct _BufferStorage;
+
+template<>
+struct _BufferStorage<bitscpp::v1::deprecated::ByteWriter<bitscpp::VectorWrapper>>
+{
+	bitscpp::VectorWrapper buf;
+
+	_BufferStorage()
+	{
+	}
+
+	bitscpp::v1::deprecated::ByteWriter<bitscpp::VectorWrapper> InitWriter()
+	{
+		return bitscpp::v1::deprecated::ByteWriter<bitscpp::VectorWrapper>(buf);
+	}
+};
+
+template<>
+struct _BufferStorage<bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper>>
+{
+	bitscpp::VectorWrapper buf;
+
+	_BufferStorage()
+	{
+	}
+
+	bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper> InitWriter()
+	{
+		return bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper>(&buf);
+	}
+};
+
+template<>
+struct _BufferStorage<bitscpp::v2_2::ByteWriter>
+{
+	bitscpp::VectorWrapper buf;
+
+	_BufferStorage()
+	{
+	}
+
+	bitscpp::v2_2::ByteWriter InitWriter()
+	{
+		buf.clear();
+		return bitscpp::v2_2::ByteWriter(bitscpp::GenericBufferWriter(&buf, buffer_writer_pimpl));
+	}
+};
+
+
 
 template<typename ByteReader, typename ByteWriter>
 struct Test {
@@ -231,7 +323,7 @@ struct Test {
 uint64_t I = 1;
 void Random(void* ptr, uint32_t bytes) {
 	static uint64_t I = 1;
-	for(int i=0; i<bytes; ++i) {
+	for(uint32_t i=0; i<bytes; ++i) {
 		((uint8_t*)ptr)[i] = ++I;
 	}
 }
@@ -239,7 +331,7 @@ void Random(void* ptr, uint32_t bytes) {
 template<typename T>
 void Random(T& v) {
 	v = 0;
-	for(int i=0; i<sizeof(T); ++i) {
+	for(size_t i=0; i<sizeof(T); ++i) {
 		v |= ((T)(++I)&255)<<(i<<3);
 	}
 }
@@ -254,7 +346,7 @@ void Random(Struct& s) {
 	s.str = "ala ma hfdjsak lfdhsjk fljhasd fljadskl fdha klfdasjf l";
 	s.str2 = "ala ma hfdjsak lfdhsjk fljhasd fljadskl fdha klfdasjf l";
 // 	s.str += std::to_string(++I);
-	static int issize = -1;
+	static uint32_t issize = -1;
 	s.is.resize(++issize);
 	for(int&v : s.is) {
 		Random(v);
@@ -314,32 +406,15 @@ void Random(Struct& s) {
 	s.ua64 &= (1llu<<(s.bytes64<<3)) - 1;
 }
 
-bitscpp::GenericBufferWriterPimpl buffer_writer_pimpl =
-{
-    .expand = +[](bitscpp::GenericBufferWriter *buffer, uint8_t minimum, std::size_t hint)
-    {
-		bitscpp::VectorWrapper *____buffer = (bitscpp::VectorWrapper *)(buffer->buffer);
-        ...
-    },
-	destructor = +[](bitscpp::GenericBufferWriter *buffer)
-    {
-        ...
-    },
-	apply_head_end_to_underlying = +[](bitscpp::GenericBufferWriter *buffer)
-    {
-        ...
-    }
-};
-
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
-		bitscpp::VectorWrapper ____buffer; \
-		{ ByteWriter s(____buffer); \
+		_BufferStorage<ByteWriter> buf; \
+		{ ByteWriter s(buf.InitWriter()); \
 		X;\
 		} \
 		v = 0; \
-		{ ByteReader s(____buffer.data(), ____buffer.size()); \
+		{ ByteReader s(buf.buf.data(), buf.buf.size()); \
 		X;} \
 		std::cout << v << "\n"; \
 }
@@ -347,14 +422,14 @@ bitscpp::GenericBufferWriterPimpl buffer_writer_pimpl =
 
 #define COMPARE(binary, T, orig, value, X) { \
 		T v = orig; \
-		bitscpp::VectorWrapper ____buffer; \
+		_BufferStorage<ByteWriter> buf; \
 		{ \
-			ByteWriter s(&____buffer); \
+			ByteWriter s(buf.InitWriter()); \
 			X; \
 		} \
 		v = T(); \
 		{ \
-			ByteReader s(____buffer.data(), ____buffer.size()); \
+			ByteReader s(buf.buf.data(), buf.buf.size()); \
 			X; \
 			if (s.is_valid()) { \
 				correct++; \
@@ -384,9 +459,10 @@ int main() {
 	int correct = 0, incorrect = 0;
 	
 	{
-	bitscpp::VectorWrapper buffer;
-	
+	_BufferStorage<ByteWriter> buf;
+
 	for(int i=0; i<16; ++i) {
+		auto &buffer = buf.buf;
 		if (buffer.size()) {
 			memset(buffer.data(), 0, buffer.size());
 		}
@@ -399,7 +475,7 @@ int main() {
 		s2.clear();
 		Random(s1);
 		
-		ByteWriter writer(&buffer);
+		ByteWriter writer(buf.InitWriter());
 		writer.op(s1);
 		
 		ByteReader reader(buffer.data(), buffer.size());
@@ -543,9 +619,9 @@ void TestVarInt() {
 		for (int i=0; i<2; ++i) {
 			uint64_t v2 = mt();
 
-			bitscpp::VectorWrapper ____buffer;
+			_BufferStorage<ByteWriter> buf;
 			{
-				ByteWriter s(&____buffer);
+				ByteWriter s(buf.InitWriter());
 				if (i) {
 					s.op(v);
 				} else {
@@ -554,7 +630,7 @@ void TestVarInt() {
 			}
 
 			{
-				ByteReader s(____buffer.data(), ____buffer.size());
+				ByteReader s(buf.buf.data(), buf.buf.size());
 				if (i) {
 					s.op(v2);
 				} else {
@@ -569,7 +645,7 @@ void TestVarInt() {
 					incorrect++;
 				}
 
-				if(v == v2 && s.is_valid()) {
+				if((uint64_t)v == v2 && s.is_valid()) {
 // 					std::cout << " TRUE       ";
 // 					std::cout << v << "  ==  " << v2 << "\n";
 					correct++;
@@ -588,13 +664,13 @@ void TestVarInt() {
 int main() {
 	printf("bitscpp::network order:\n");
 	TestNetworkOrder();
-	
+
 	{
 		printf("\n\n");
 		printf("bitscpp::v1:\n");
 		Test<bitscpp::v1::deprecated::ByteReader<true>, bitscpp::v1::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	}
-	
+
 	{
 		printf("\n\n");
 		printf("bitscpp::v2:\n");
@@ -603,7 +679,7 @@ int main() {
 		printf("bitscpp::v2:\n");
 		Test<bitscpp::v2::ByteReader, bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	}
-	
+
 	{
 		printf("\n\n");
 		printf("bitscpp::v2_2:\n");
@@ -612,9 +688,9 @@ int main() {
 		printf("bitscpp::v2_2:\n");
 		Test<bitscpp::v2::ByteReader, bitscpp::v2_2::ByteWriter>{}.main();
 	}
-	
+
 	printf("Total errors: %lu\n", totalErrors);
-	
+
 	return totalErrors ? 1 : 0;
 }
 

@@ -13,8 +13,8 @@
 
 namespace bitscpp
 {
-namespace deprecated
-{
+namespace v1 {
+namespace deprecated {
 template <typename BT, typename T>
 inline v1::deprecated::ByteWriter<BT> &op(v1::deprecated::ByteWriter<BT> &s, const std::set<T> &set)
 {
@@ -31,7 +31,8 @@ inline v1::deprecated::ByteWriter<BT> &op(v1::deprecated::ByteWriter<BT> &s, con
 		s.op(v);
 	return s;
 }
-} // namespace deprecated
+}
+}
 } // namespace bitscpp
 
 #endif

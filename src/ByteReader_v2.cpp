@@ -3,7 +3,9 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#ifdef BITSCPP_BYTE_WRITER_V2_2_HPP
 #pragma once
+#endif
 
 #ifndef BITSCPP_BYTE_READER_V2_CPP
 #define BITSCPP_BYTE_READER_V2_CPP

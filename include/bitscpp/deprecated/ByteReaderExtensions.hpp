@@ -13,6 +13,8 @@
 
 namespace bitscpp
 {
+namespace v1 {
+namespace deprecated {
 template <typename T>
 inline v1::deprecated::ByteReader<true> &op(v1::deprecated::ByteReader<true> &s, std::set<T> &set)
 {
@@ -61,6 +63,8 @@ inline v1::deprecated::ByteReader<false> &op(v1::deprecated::ByteReader<false> &
 		set.insert(std::move(v));
 	}
 	return s;
+}
+}
 }
 } // namespace bitscpp
 

@@ -3,7 +3,9 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#ifdef BITSCPP_GENERIC_BUFFER_WRAPPER_HPP
 #pragma once
+#endif
 
 #ifndef BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
 #define BITSCPP_GENERIC_BUFFER_WRAPPER_CPP
