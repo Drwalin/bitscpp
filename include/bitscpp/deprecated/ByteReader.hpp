@@ -16,6 +16,7 @@
 #include "../Endianness.hpp"
 
 namespace bitscpp {
+namespace v1 {
 namespace deprecated {
 	
 	template<bool __safeReading = true>
@@ -453,7 +454,8 @@ namespace deprecated {
 		value += origin;
 		return *this;
 	}
-}
+} // namespace deprecated
+} // namespace v1
 } // namespace bitscpp
 
 #endif

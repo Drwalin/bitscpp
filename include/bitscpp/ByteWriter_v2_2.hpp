@@ -23,13 +23,13 @@ namespace bitscpp
 {
 namespace v2_2
 {
-inline const static uint32_t MAX_ARRAY_ELEMENTS = v2::MAX_ARRAY_ELEMENTS;
-inline const static uint32_t MAX_BUFFER_SIZE = v2::MAX_BUFFER_SIZE;
-using Errors = v2::Errors;
-using Type = v2::Type;
-using TypeHeader = v2::TypeHeader;
-using TypeHeader_ImmediateValues = v2::TypeHeader_ImmediateValues;
-using TypeHeader_ImmediateIntegerRanges = v2::TypeHeader_ImmediateIntegerRanges;
+using v2::MAX_ARRAY_ELEMENTS;
+using v2::MAX_BUFFER_SIZE;
+using v2::Errors;
+using v2::Type;
+using v2::TypeHeader;
+using v2::TypeHeader_ImmediateValues;
+using v2::TypeHeader_ImmediateIntegerRanges;
 
 class ByteWriter
 {

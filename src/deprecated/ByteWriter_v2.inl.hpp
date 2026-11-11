@@ -3,19 +3,26 @@
 // This file is part of bitscpp project under MIT License
 // You should have received a copy of the MIT License along with this program.
 
+#pragma once
+
+#ifndef BITSCPP_BYTE_WRITER_V2_INL_HPP
+#define BITSCPP_BYTE_WRITER_V2_INL_HPP
+
 #include <cassert>
 #include <cstring>
 
-#include "../thirdparty/half_float/HalfFloat.hpp"
+#include "../../thirdparty/half_float/HalfFloat.hpp"
 
-#include "../include/bitscpp/Endianness.hpp"
-#include "../include/bitscpp/V2_Specification.hpp"
+#include "../../include/bitscpp/Endianness.hpp"
+#include "../../include/bitscpp/V2_Specification.hpp"
 
-#include "../include/bitscpp/ByteWriter_v2.hpp"
+#include "../../include/bitscpp/deprecated/ByteWriter_v2.hpp"
 
 namespace bitscpp
 {
 namespace v2
+{
+namespace deprecated
 {
 template<typename BT>
 ByteWriter<BT> &ByteWriter<BT>::op_sized_byte_array_header(uint32_t bytes)
@@ -362,7 +369,9 @@ Errors ByteWriter<BT>::get_errors() const { return (Errors)errors; }
 template<typename BT>
 void ByteWriter<BT>::set_error(Errors error) { errors |= error; }
 
+} // namespace deprecated
 } // namespace v2
 } // namespace bitscpp
 
 #undef ByteWriter
+#endif

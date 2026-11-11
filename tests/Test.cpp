@@ -5,10 +5,10 @@
 #include "../include/bitscpp/ByteReaderExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/deprecated/ByteWriterExtensions.hpp" // IWYU pragma: keep
 #include "../include/bitscpp/deprecated/ByteReaderExtensions.hpp" // IWYU pragma: keep
-#include "../include/bitscpp/ByteWriter_v2.hpp"
+#include "../include/bitscpp/deprecated/ByteWriter_v2.hpp"
 #include "../include/bitscpp/ByteReader_v2.hpp"
 #include "../include/bitscpp/ByteWriter_v2_2.hpp"
-#include "../src/ByteWriter_v2.inl.hpp"
+#include "../src/deprecated/ByteWriter_v2.inl.hpp" // IWYU pragma: keep
 
 #include <iostream>
 #include <random>
@@ -314,6 +314,23 @@ void Random(Struct& s) {
 	s.ua64 &= (1llu<<(s.bytes64<<3)) - 1;
 }
 
+bitscpp::GenericBufferWriterPimpl buffer_writer_pimpl =
+{
+    .expand = +[](bitscpp::GenericBufferWriter *buffer, uint8_t minimum, std::size_t hint)
+    {
+		bitscpp::VectorWrapper *____buffer = (bitscpp::VectorWrapper *)(buffer->buffer);
+        ...
+    },
+	destructor = +[](bitscpp::GenericBufferWriter *buffer)
+    {
+        ...
+    },
+	apply_head_end_to_underlying = +[](bitscpp::GenericBufferWriter *buffer)
+    {
+        ...
+    }
+};
+
 #define COMP(T, orig, X) { \
 		T v = orig; \
 		std::cout << v << "  ==  "; \
@@ -575,16 +592,25 @@ int main() {
 	{
 		printf("\n\n");
 		printf("bitscpp::v1:\n");
-		Test<bitscpp::deprecated::ByteReader<true>, bitscpp::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+		Test<bitscpp::v1::deprecated::ByteReader<true>, bitscpp::v1::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
 	}
 	
 	{
 		printf("\n\n");
 		printf("bitscpp::v2:\n");
-		TestVarInt<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>();
+		TestVarInt<bitscpp::v2::ByteReader, bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper>>();
 		printf("\n\n");
 		printf("bitscpp::v2:\n");
-		Test<bitscpp::v2::ByteReader, bitscpp::v2::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+		Test<bitscpp::v2::ByteReader, bitscpp::v2::deprecated::ByteWriter<bitscpp::VectorWrapper>>{}.main();
+	}
+	
+	{
+		printf("\n\n");
+		printf("bitscpp::v2_2:\n");
+		TestVarInt<bitscpp::v2::ByteReader, bitscpp::v2_2::ByteWriter>();
+		printf("\n\n");
+		printf("bitscpp::v2_2:\n");
+		Test<bitscpp::v2::ByteReader, bitscpp::v2_2::ByteWriter>{}.main();
 	}
 	
 	printf("Total errors: %lu\n", totalErrors);

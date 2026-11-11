@@ -13,8 +13,15 @@ namespace bitscpp
 namespace v2_2
 {
 class ByteWriter;
+}
+using namespace v2_2;
+
+namespace v2
+{
 class ByteReader;
 }
+using namespace v2;
+
 class GenericBufferWriter;
 }
 

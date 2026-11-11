@@ -13,10 +13,8 @@
 
 namespace bitscpp
 {
-namespace deprecated
-{
 template <typename T>
-inline ByteReader<true> &op(ByteReader<true> &s, std::set<T> &set)
+inline v1::deprecated::ByteReader<true> &op(v1::deprecated::ByteReader<true> &s, std::set<T> &set)
 {
 	uint32_t elements;
 	s.op(elements);
@@ -28,7 +26,7 @@ inline ByteReader<true> &op(ByteReader<true> &s, std::set<T> &set)
 	return s;
 }
 template <typename T>
-inline ByteReader<true> &op(ByteReader<true> &s, std::unordered_set<T> &set)
+inline v1::deprecated::ByteReader<true> &op(v1::deprecated::ByteReader<true> &s, std::unordered_set<T> &set)
 {
 	uint32_t elements;
 	s.op(elements);
@@ -41,7 +39,7 @@ inline ByteReader<true> &op(ByteReader<true> &s, std::unordered_set<T> &set)
 }
 
 template <typename T>
-inline ByteReader<false> &op(ByteReader<false> &s, std::set<T> &set)
+inline v1::deprecated::ByteReader<false> &op(v1::deprecated::ByteReader<false> &s, std::set<T> &set)
 {
 	uint32_t elements;
 	s.op(elements);
@@ -53,7 +51,7 @@ inline ByteReader<false> &op(ByteReader<false> &s, std::set<T> &set)
 	return s;
 }
 template <typename T>
-inline ByteReader<false> &op(ByteReader<false> &s, std::unordered_set<T> &set)
+inline v1::deprecated::ByteReader<false> &op(v1::deprecated::ByteReader<false> &s, std::unordered_set<T> &set)
 {
 	uint32_t elements;
 	s.op(elements);
@@ -64,7 +62,6 @@ inline ByteReader<false> &op(ByteReader<false> &s, std::unordered_set<T> &set)
 	}
 	return s;
 }
-} // namespace deprecated
 } // namespace bitscpp
 
 #endif

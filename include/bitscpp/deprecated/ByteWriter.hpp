@@ -16,6 +16,7 @@
 #include "../Endianness.hpp"
 
 namespace bitscpp {
+namespace v1 {
 namespace deprecated {
 
 	template<typename BT>
@@ -403,7 +404,8 @@ namespace deprecated {
 			Tmax max, T bytes) {
 		return op(value - origin, min, max, bytes);
 	}
-}
+} // namespace deprecated
+} // namespace v1
 } // namespace bitscpp
 
 #endif

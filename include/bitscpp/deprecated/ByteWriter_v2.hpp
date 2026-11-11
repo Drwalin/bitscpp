@@ -14,8 +14,8 @@
 #include <string_view>
 #include <vector>
 
-#include "V2_Specification.hpp"
-#include "SerizalizerClass.hpp"
+#include "../V2_Specification.hpp"
+#include "../SerizalizerClass.hpp"
 
 /*
  * Type BT requires following interface:
@@ -35,6 +35,8 @@
 namespace bitscpp
 {
 namespace v2
+{
+namespace deprecated
 {
 template<typename BT>
 class ByteWriter
@@ -206,6 +208,7 @@ public:
 	uint32_t errors = 0;
 };
 
+} // namespace deprecated
 } // namespace v2
 } // namespace bitscpp
 

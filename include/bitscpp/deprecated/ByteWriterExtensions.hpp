@@ -16,7 +16,7 @@ namespace bitscpp
 namespace deprecated
 {
 template <typename BT, typename T>
-inline ByteWriter<BT> &op(ByteWriter<BT> &s, const std::set<T> &set)
+inline v1::deprecated::ByteWriter<BT> &op(v1::deprecated::ByteWriter<BT> &s, const std::set<T> &set)
 {
 	s.op((uint32_t)set.size());
 	for (auto &v : set)
@@ -24,7 +24,7 @@ inline ByteWriter<BT> &op(ByteWriter<BT> &s, const std::set<T> &set)
 	return s;
 }
 template <typename BT, typename T>
-inline ByteWriter<BT> &op(ByteWriter<BT> &s, const std::unordered_set<T> &set)
+inline v1::deprecated::ByteWriter<BT> &op(v1::deprecated::ByteWriter<BT> &s, const std::unordered_set<T> &set)
 {
 	s.op((uint32_t)set.size());
 	for (auto &v : set)
