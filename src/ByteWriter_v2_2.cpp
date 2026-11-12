@@ -342,7 +342,6 @@ BITSCPP_INLINE ByteWriter &ByteWriter::op_untyped_var_uint(uint64_t value)
 			8,8,8,8,8,8,8,
 			9,9,9,9,9,9,9,9};
 		const uint32_t bytes = _bytes[bits];
-		assert(bytes == (bits + 7) / 7 || (bytes == 1 && bits == 0));
 		assert(bytes == (bits + 6) / 7 || (bytes == 1 && bits == 0) || (bytes == 9 && bits == 64));
 
 		constexpr uint8_t masks[9] = {0x7F, 0x3F, 0x1F, 0x0F,

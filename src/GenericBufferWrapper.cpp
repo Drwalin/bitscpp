@@ -56,17 +56,21 @@ BITSCPP_INLINE GenericBufferWriter::GenericBufferWriter(GenericBufferWriter &&o)
 BITSCPP_INLINE GenericBufferWriter::~GenericBufferWriter()
 {
 	if (buffer) {
+		assert(impl.apply_head_end_to_underlying);
+		impl.apply_head_end_to_underlying(this);
+		head = nullptr;
+		end = nullptr;
 		assert(impl.destructor);
 		impl.destructor(this);
 		buffer = nullptr;
-		head = nullptr;
-		end = nullptr;
 	}
 }
 
 BITSCPP_INLINE void *GenericBufferWriter::release_buffer()
 {
 	if (buffer == nullptr) {
+		assert(head == nullptr);
+		assert(end == nullptr);
 		return nullptr;
 	}
 	void *const buf = buffer;
